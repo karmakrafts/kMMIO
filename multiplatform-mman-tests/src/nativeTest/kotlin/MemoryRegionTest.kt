@@ -129,17 +129,21 @@ fun `Resize private file mapping`() {
 fun `Copy data to shared file mapping`() {
     val path = Path("newfile.txt")
     val sourcePath = Path("testfile.txt")
-    MemoryRegion.map(path, AccessFlags.READ + AccessFlags.WRITE, MappingFlags.SHARED).use {
+    MemoryRegion.map(path, AccessFlags.READ + AccessFlags.WRITE).use {
         assertNotEquals(0, it.address.rawValue.toLong(), "Address cannot be 0")
         it.growIfNeeded(SystemFileSystem.metadataOrNull(sourcePath)?.size ?: PAGE_SIZE)
         it.sink.apply {
-            SystemFileSystem.source(sourcePath).buffered().transferTo(this)
+            SystemFileSystem.source(sourcePath).buffered().use { source ->
+                source.transferTo(this)
+            }
             flush()
         }
     }
-    assertEquals(SystemFileSystem.source(sourcePath).buffered().readString(),
-        SystemFileSystem.source(path).buffered().readString(),
-        "File contents do not match")
+    SystemFileSystem.source(sourcePath).buffered().use { s1 ->
+        SystemFileSystem.source(path).buffered().use { s2 ->
+            assertEquals(s1.readString(), s2.readString(), "File contents do not match")
+        }
+    }
     SystemFileSystem.delete(path) // Delete newly created file when test is done
 }
 
@@ -147,15 +151,17 @@ fun `Copy data to shared file mapping`() {
 fun `Copy data from shared file mapping`() {
     val path = Path("testfile.txt")
     val destPath = Path("newfile.txt")
-    MemoryRegion.map(path, AccessFlags.READ, MappingFlags.SHARED).use {
+    MemoryRegion.map(path, AccessFlags.READ).use {
         assertNotEquals(0, it.address.rawValue.toLong(), "Address cannot be 0")
-        SystemFileSystem.sink(destPath).buffered().apply {
-            transferFrom(it.source)
-            flush()
+        SystemFileSystem.sink(destPath).buffered().use { sink ->
+            sink.transferFrom(it.source)
+            sink.flush()
         }
     }
-    assertEquals(SystemFileSystem.source(path).buffered().readString(),
-        SystemFileSystem.source(destPath).buffered().readString(),
-        "File contents do not match")
+    SystemFileSystem.source(path).buffered().use { s1 ->
+        SystemFileSystem.source(destPath).buffered().use { s2 ->
+            assertEquals(s1.readString(), s2.readString(), "File contents do not match")
+        }
+    }
     SystemFileSystem.delete(destPath) // Delete newly created file when test is done
 }

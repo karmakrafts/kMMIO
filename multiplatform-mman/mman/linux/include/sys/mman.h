@@ -38,7 +38,39 @@ typedef __mode_t mode_t;
 # define __mode_t_defined
 #endif
 
-#include <bits/mman.h>
+// Inlined so cinterop generates constants
+#define PROT_READ       0x1             /* Page can be read.  */
+#define PROT_WRITE      0x2             /* Page can be written.  */
+#define PROT_EXEC       0x4             /* Page can be executed.  */
+#define PROT_NONE       0x0             /* Page can not be accessed.  */
+
+#define MAP_GROWSDOWN  0x00100         /* Stack-like segment.  */
+#define MAP_DENYWRITE  0x00800         /* ETXTBSY.  */
+#define MAP_EXECUTABLE 0x01000         /* Mark it as an executable.  */
+#define MAP_LOCKED     0x02000         /* Lock the mapping.  */
+#define MAP_NORESERVE  0x04000         /* Don't check for reservations.  */
+#define MAP_POPULATE   0x08000         /* Populate (prefault) pagetables.  */
+#define MAP_NONBLOCK   0x10000         /* Do not block on IO.  */
+#define MAP_STACK      0x20000         /* Allocation is for a stack.  */
+#define MAP_HUGETLB    0x40000         /* Create huge page mapping.  */
+#define MAP_SYNC       0x80000         /* Perform synchronous page
+                                           faults for the mapping.  */
+#define MAP_FIXED_NOREPLACE 0x100000   /* MAP_FIXED but do not unmap
+                                           underlying mapping.  */
+
+#define MAP_SHARED      0x01            /* Share changes.  */
+#define MAP_PRIVATE     0x02            /* Changes are private.  */
+
+#ifdef __MAP_ANONYMOUS
+#define MAP_ANONYMOUS __MAP_ANONYMOUS /* Don't use a file.  */
+#else
+#define MAP_ANONYMOUS 0x20            /* Don't use a file.  */
+#endif
+#define MAP_ANON       MAP_ANONYMOUS
+
+#define MS_ASYNC        1               /* Sync memory asynchronously.  */
+#define MS_SYNC         4               /* Synchronous memory sync.  */
+#define MS_INVALIDATE   2               /* Invalidate the caches.  */
 
 /* Return value of `mmap' in case of an error.  */
 #define MAP_FAILED	((void *) -1)

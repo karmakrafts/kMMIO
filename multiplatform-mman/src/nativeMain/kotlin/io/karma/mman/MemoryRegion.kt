@@ -18,8 +18,6 @@ import kotlinx.io.files.Path
 import kotlinx.io.files.SystemFileSystem
 import mman.MAP_ANON
 import mman.MAP_FAILED
-import mman.MAP_FILE
-import mman.MAP_FIXED
 import mman.MAP_PRIVATE
 import mman.MAP_SHARED
 import mman.MS_ASYNC
@@ -84,8 +82,6 @@ value class MappingFlags private constructor(internal val value: Int) {
     companion object {
         val NONE: MappingFlags = MappingFlags(0)
         val ANON: MappingFlags = MappingFlags(MAP_ANON)
-        val FILE: MappingFlags = MappingFlags(MAP_FILE)
-        val FIXED: MappingFlags = MappingFlags(MAP_FIXED)
         val PRIVATE: MappingFlags = MappingFlags(MAP_PRIVATE)
         val SHARED: MappingFlags = MappingFlags(MAP_SHARED)
     }

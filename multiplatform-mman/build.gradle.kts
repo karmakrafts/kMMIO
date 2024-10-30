@@ -1,3 +1,5 @@
+import org.jetbrains.kotlin.gradle.tasks.CInteropProcess
+
 /*
  * Copyright 2024 Karma Krafts & associates
  *
@@ -77,6 +79,10 @@ val dokkaJar by tasks.registering(Jar::class) {
 }
 
 tasks {
+    // Force disable caching for CInterop tasks
+    withType<CInteropProcess>().configureEach {
+        outputs.cacheIf { false }
+    }
     dokkaHtml {
         dokkaSourceSets.create("main") {
             reportUndocumented = false
