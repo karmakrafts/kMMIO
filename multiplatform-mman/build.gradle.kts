@@ -31,13 +31,7 @@ java {
 }
 
 kotlin {
-    mingwX64 {
-        compilations.configureEach {
-            cinterops {
-                val mman by creating {}
-            }
-        }
-    }
+    mingwX64()
     listOf(linuxX64(), linuxArm64()).forEach { target ->
         target.apply {
             compilations.configureEach {
@@ -58,14 +52,13 @@ kotlin {
     }
     applyDefaultHierarchyTemplate()
     sourceSets {
+        val posixMain by creating { dependsOn(nativeMain.get()) }
+        linuxMain { dependsOn(posixMain) }
+        macosMain { dependsOn(posixMain) }
         commonMain {
             dependencies {
                 implementation(libs.kotlinx.io.bytestring)
                 implementation(libs.kotlinx.io.core)
-            }
-        }
-        nativeTest {
-            dependencies {
                 implementation(libs.kotest.engine)
             }
         }

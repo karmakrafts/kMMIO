@@ -21,14 +21,14 @@ import kotlin.test.assertNotEquals
  */
 
 @Test
-fun `Map and unmap private anonymous memory region`() {
+fun `Map and unmap private memory region`() {
     MemoryRegion.map(PAGE_SIZE shl 2, AccessFlags.READ + AccessFlags.WRITE).use {
         assertNotEquals(0, it.address.rawValue.toLong(), "Address cannot be 0")
     }
 }
 
 @Test
-fun `Map and unmap non-existing file to private mapping`() {
+fun `Map and unmap non-existing file to shared mapping`() {
     val path = Path("newfile.txt")
     MemoryRegion.map(path, AccessFlags.READ + AccessFlags.WRITE).use {
         assertNotEquals(0, it.address.rawValue.toLong(), "Address cannot be 0")
@@ -37,27 +37,27 @@ fun `Map and unmap non-existing file to private mapping`() {
 }
 
 @Test
-fun `Map and unmap existing file to private mapping`() {
+fun `Map and unmap existing file to shared mapping`() {
     MemoryRegion.map(Path("testfile.txt"), AccessFlags.READ).use {
         assertNotEquals(0, it.address.rawValue.toLong(), "Address cannot be 0")
     }
 }
 
 @Test
-fun `Change memory protection flags of private anonymous mapping`() {
+fun `Change memory protection flags of private mapping`() {
     MemoryRegion.map(PAGE_SIZE shl 2, AccessFlags.READ + AccessFlags.WRITE).use {
         assertNotEquals(0, it.address.rawValue.toLong(), "Address cannot be 0")
         assertEquals(AccessFlags.READ + AccessFlags.WRITE, it.accessFlags, "Access flags do not match")
 
         if (!it.protect(AccessFlags.READ)) {
-            fail(MemoryRegion.getLastError())
+            fail(MemoryRegion.lastError)
         }
 
         assertNotEquals(0, it.address.rawValue.toLong(), "Address cannot be 0")
         assertEquals(AccessFlags.READ, it.accessFlags, "Access flags do not match")
 
         if (!it.protect(AccessFlags.READ + Companion.WRITE)) {
-            fail(MemoryRegion.getLastError())
+            fail(MemoryRegion.lastError)
         }
 
         assertNotEquals(0, it.address.rawValue.toLong(), "Address cannot be 0")
@@ -72,14 +72,14 @@ fun `Change memory protection flags of private file mapping`() {
         assertEquals(AccessFlags.READ + AccessFlags.WRITE, it.accessFlags, "Access flags do not match")
 
         if (!it.protect(AccessFlags.READ)) {
-            fail(MemoryRegion.getLastError())
+            fail(MemoryRegion.lastError)
         }
 
         assertNotEquals(0, it.address.rawValue.toLong(), "Address cannot be 0")
         assertEquals(AccessFlags.READ, it.accessFlags, "Access flags do not match")
 
         if (!it.protect(AccessFlags.READ + Companion.WRITE)) {
-            fail(MemoryRegion.getLastError())
+            fail(MemoryRegion.lastError)
         }
 
         assertNotEquals(0, it.address.rawValue.toLong(), "Address cannot be 0")
@@ -88,7 +88,7 @@ fun `Change memory protection flags of private file mapping`() {
 }
 
 @Test
-fun `Resize private anonymous mapping`() {
+fun `Resize private mapping`() {
     MemoryRegion.map(PAGE_SIZE shl 2, AccessFlags.READ + AccessFlags.WRITE).use {
         assertEquals(PAGE_SIZE shl 2, it.size)
         assertNotEquals(0, it.address.rawValue.toLong(), "Address cannot be 0")
@@ -106,7 +106,7 @@ fun `Resize private anonymous mapping`() {
 }
 
 @Test
-fun `Resize private file mapping`() {
+fun `Resize shared file mapping`() {
     val path = Path("newfile.txt")
     MemoryRegion.map(path, AccessFlags.READ + AccessFlags.WRITE, size = PAGE_SIZE shl 2).use {
         assertEquals(PAGE_SIZE shl 2, it.size)
