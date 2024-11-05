@@ -32,24 +32,10 @@ java {
 
 kotlin {
     mingwX64()
-    listOf(linuxX64(), linuxArm64()).forEach { target ->
-        target.apply {
-            compilations.configureEach {
-                cinterops {
-                    val mman by creating {}
-                }
-            }
-        }
-    }
-    listOf(macosX64(), macosArm64()).forEach { target ->
-        target.apply {
-            compilations.configureEach {
-                cinterops {
-                    val mman by creating {}
-                }
-            }
-        }
-    }
+    linuxX64()
+    linuxArm64()
+    macosX64()
+    macosArm64()
     applyDefaultHierarchyTemplate()
     sourceSets {
         val posixMain by creating { dependsOn(nativeMain.get()) }

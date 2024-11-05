@@ -1,6 +1,5 @@
 package io.karma.mman
 
-import io.karma.mman.MemoryRegion.Companion.BUFFER_SIZE
 import kotlinx.cinterop.COpaque
 import kotlinx.cinterop.COpaquePointer
 import kotlinx.cinterop.ExperimentalForeignApi
@@ -40,7 +39,6 @@ import kotlin.math.min
 
 value class SyncFlags private constructor(internal val value: Int) {
     companion object {
-        val NONE: SyncFlags = SyncFlags(0)
         val SYNC: SyncFlags = SyncFlags(1)
         val ASYNC: SyncFlags = SyncFlags(2)
         val INVALIDATE: SyncFlags = SyncFlags(4)
@@ -52,7 +50,6 @@ value class SyncFlags private constructor(internal val value: Int) {
 
 value class AccessFlags private constructor(internal val value: Int) {
     companion object {
-        val NONE: AccessFlags = AccessFlags(0)
         val READ: AccessFlags = AccessFlags(1)
         val WRITE: AccessFlags = AccessFlags(2)
         val EXEC: AccessFlags = AccessFlags(4)
@@ -64,7 +61,6 @@ value class AccessFlags private constructor(internal val value: Int) {
 
 value class MappingFlags private constructor(internal val value: Int) {
     companion object {
-        val NONE: MappingFlags = MappingFlags(0)
         val ANON: MappingFlags = MappingFlags(1)
         val PRIVATE: MappingFlags = MappingFlags(2)
         val SHARED: MappingFlags = MappingFlags(4)
@@ -74,32 +70,6 @@ value class MappingFlags private constructor(internal val value: Int) {
     operator fun contains(flags: MappingFlags): Boolean = value and flags.value == flags.value
 }
 
-expect val PAGE_SIZE: Long
-
-@ExperimentalForeignApi
-internal expect fun mapMemory(fd: Int,
-                              size: Long,
-                              accessFlags: AccessFlags,
-                              mappingFlags: MappingFlags): COpaquePointer?
-
-@ExperimentalForeignApi
-internal expect fun unmapMemory(address: COpaquePointer, size: Long): Boolean
-
-@ExperimentalForeignApi
-internal expect fun lockMemory(address: COpaquePointer, size: Long): Boolean
-
-@ExperimentalForeignApi
-internal expect fun unlockMemory(address: COpaquePointer, size: Long): Boolean
-
-@ExperimentalForeignApi
-internal expect fun syncMemory(address: COpaquePointer, size: Long, flags: SyncFlags): Boolean
-
-@ExperimentalForeignApi
-internal expect fun protectMemory(address: COpaquePointer, size: Long, flags: AccessFlags): Boolean
-
-@ExperimentalForeignApi
-internal expect fun getLastError(): String
-
 @OptIn(ExperimentalForeignApi::class, InternalMmanApi::class)
 class MemoryRegion(baseAddress: COpaquePointer,
                    size: Long,
@@ -107,24 +77,23 @@ class MemoryRegion(baseAddress: COpaquePointer,
                    val mappingFlags: MappingFlags,
                    @property:InternalMmanApi val fd: Int) : AutoCloseable {
     companion object {
-        internal const val BUFFER_SIZE: Int = 1024
-
         val lastError: String
             get() = getLastError()
 
         fun map(size: Long, accessFlags: AccessFlags, mappingFlags: MappingFlags = MappingFlags.PRIVATE): MemoryRegion {
             require(size >= 1) { "Memory region size must be larger or equal to 1 byte" }
-            val address = requireNotNull(mapMemory(-1,
+            val address = mapMemory(-1,
                 size,
                 accessFlags,
-                mappingFlags)) { "Could not map memory region" }
-            return MemoryRegion(address, size, accessFlags, (mappingFlags + MappingFlags.ANON), -1)
+                mappingFlags + MappingFlags.ANON)
+            require(isValidAddress(address)) { "Invalid mapping address" }
+            return MemoryRegion(address as COpaquePointer, size, accessFlags, (mappingFlags + MappingFlags.ANON), -1)
         }
 
         @OptIn(UnsafeNumber::class)
         fun map(path: Path,
                 accessFlags: AccessFlags,
-                mappingFlags: MappingFlags = MappingFlags.PRIVATE,
+                mappingFlags: MappingFlags = MappingFlags.SHARED,
                 size: Long = PAGE_SIZE,
                 override: Boolean = false): MemoryRegion {
             require(size >= 1) { "Memory region size must be larger or equal to 1 byte" }
@@ -152,19 +121,14 @@ class MemoryRegion(baseAddress: COpaquePointer,
             }
 
             val mappingSize = fileSize ?: size
-            val address = requireNotNull(mapMemory(fd,
+            val address = mapMemory(fd,
                 mappingSize,
                 accessFlags,
-                mappingFlags)) { "Could not map file $path into memory" }
-            return MemoryRegion(address, mappingSize, accessFlags, mappingFlags, fd)
+                mappingFlags)
+            require(isValidAddress(address)) { "Invalid mapping address for $path" }
+            return MemoryRegion(address as COpaquePointer, mappingSize, accessFlags, mappingFlags, fd)
         }
     }
-
-    val source: RawSource
-        get() = MemoryRegionSource(this)
-
-    val sink: RawSink
-        get() = MemoryRegionSink(this)
 
     internal var isClosed: Boolean = false
 
@@ -197,6 +161,10 @@ class MemoryRegion(baseAddress: COpaquePointer,
         accessFlags = flags
         return true
     }
+
+    fun asSink(bufferSize: Int = 1024): RawSink = MemoryRegionSink(this, bufferSize)
+
+    fun asSource(bufferSize: Int = 1024): RawSource = MemoryRegionSource(this, bufferSize)
 
     @OptIn(UnsafeNumber::class)
     fun resize(size: Long): Boolean {
@@ -231,7 +199,10 @@ class MemoryRegion(baseAddress: COpaquePointer,
 }
 
 @OptIn(ExperimentalForeignApi::class)
-internal class MemoryRegionSource(private val region: MemoryRegion) : RawSource {
+internal class MemoryRegionSource(
+    private val region: MemoryRegion,
+    private val bufferSize: Int
+) : RawSource {
     private var isClosed: Boolean = false
     private var position: Long = 0
 
@@ -241,12 +212,12 @@ internal class MemoryRegionSource(private val region: MemoryRegion) : RawSource 
 
         if (isClosed || position == region.size) return -1L
 
-        val buffer = ByteArray(BUFFER_SIZE)
+        val buffer = ByteArray(bufferSize)
         val actualByteCount = min(region.size, byteCount)
         var readBytes = 0L
 
         while (readBytes < actualByteCount) {
-            val chunkSize = min(BUFFER_SIZE.toLong(), actualByteCount - readBytes)
+            val chunkSize = min(bufferSize.toLong(), actualByteCount - readBytes)
             buffer.usePinned {
                 memcpy(it.addressOf(0),
                     interpretCPointer<COpaque>(region.address.rawValue + position + readBytes),
@@ -266,7 +237,10 @@ internal class MemoryRegionSource(private val region: MemoryRegion) : RawSource 
 }
 
 @OptIn(ExperimentalForeignApi::class)
-internal class MemoryRegionSink(private val region: MemoryRegion) : RawSink {
+internal class MemoryRegionSink(
+    private val region: MemoryRegion,
+    private val bufferSize: Int
+) : RawSink {
     private var isClosed: Boolean = false
     private var position: Long = 0
 
@@ -276,13 +250,13 @@ internal class MemoryRegionSink(private val region: MemoryRegion) : RawSink {
 
         if (isClosed) return
 
-        val buffer = ByteArray(BUFFER_SIZE)
+        val buffer = ByteArray(bufferSize)
         val actualByteCount = min(source.size, byteCount)
         require(actualByteCount <= region.size) { "Size exceeds memory region bounds" }
         var writtenBytes = 0L
 
         while (writtenBytes < actualByteCount) {
-            var chunkSize = min(BUFFER_SIZE.toLong(), actualByteCount - writtenBytes)
+            var chunkSize = min(bufferSize.toLong(), actualByteCount - writtenBytes)
             chunkSize = source.readAtMostTo(buffer, endIndex = chunkSize.toInt()).toLong()
             if (chunkSize == -1L) break // EOF
             buffer.usePinned {

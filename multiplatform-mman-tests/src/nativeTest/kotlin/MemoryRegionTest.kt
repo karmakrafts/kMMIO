@@ -22,7 +22,7 @@ import kotlin.test.assertNotEquals
 
 @Test
 fun `Map and unmap private memory region`() {
-    MemoryRegion.map(PAGE_SIZE shl 2, AccessFlags.READ + AccessFlags.WRITE).use {
+    MemoryRegion.map(4096, AccessFlags.READ + AccessFlags.WRITE).use {
         assertNotEquals(0, it.address.rawValue.toLong(), "Address cannot be 0")
     }
 }
@@ -132,7 +132,7 @@ fun `Copy data to shared file mapping`() {
     MemoryRegion.map(path, AccessFlags.READ + AccessFlags.WRITE).use {
         assertNotEquals(0, it.address.rawValue.toLong(), "Address cannot be 0")
         it.growIfNeeded(SystemFileSystem.metadataOrNull(sourcePath)?.size ?: PAGE_SIZE)
-        it.sink.apply {
+        it.asSink().apply {
             SystemFileSystem.source(sourcePath).buffered().use { source ->
                 source.transferTo(this)
             }
@@ -154,7 +154,7 @@ fun `Copy data from shared file mapping`() {
     MemoryRegion.map(path, AccessFlags.READ).use {
         assertNotEquals(0, it.address.rawValue.toLong(), "Address cannot be 0")
         SystemFileSystem.sink(destPath).buffered().use { sink ->
-            sink.transferFrom(it.source)
+            sink.transferFrom(it.asSource())
             sink.flush()
         }
     }

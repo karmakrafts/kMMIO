@@ -2,11 +2,28 @@ package io.karma.mman
 
 import kotlinx.cinterop.COpaquePointer
 import kotlinx.cinterop.ExperimentalForeignApi
+import kotlinx.cinterop.alloc
+import kotlinx.cinterop.memScoped
+import kotlinx.cinterop.ptr
+import platform.windows.GetSystemInfo
+import platform.windows.SYSTEM_INFO
 
 /**
  * @author Alexander Hinze
- * @since 31/10/2024
+ * @since 30/10/2024
  */
+
+@OptIn(ExperimentalForeignApi::class)
+actual val PAGE_SIZE: Long by lazy {
+    memScoped {
+        val info = alloc<SYSTEM_INFO>()
+        GetSystemInfo(info.ptr)
+        info.dwPageSize.toLong()
+    }
+}
+
+@ExperimentalForeignApi
+internal actual fun isValidAddress(address: COpaquePointer?): Boolean = address != null
 
 @ExperimentalForeignApi
 internal actual fun mapMemory(fd: Int,
