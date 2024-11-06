@@ -8,6 +8,11 @@ import platform.posix.*
  * @since 31/10/2024
  */
 
+@OptIn(ExperimentalForeignApi::class)
+internal class PosixMemoryRegionHandle(
+    override val address: COpaquePointer
+) : MemoryRegionHandle
+
 private inline val SyncFlags.posixValue: Int
     get() {
         var flags = 0
@@ -40,39 +45,43 @@ actual val PAGE_SIZE: Long by lazy {
 }
 
 @ExperimentalForeignApi
-internal actual fun isValidAddress(address: COpaquePointer?): Boolean = address != MAP_FAILED
-
-@ExperimentalForeignApi
 internal actual fun mapMemory(fd: Int,
                               size: Long,
                               accessFlags: AccessFlags,
-                              mappingFlags: MappingFlags): COpaquePointer? {
-    return mmap(null, size.convert(), accessFlags.posixValue, mappingFlags.posixValue, fd, 0)
+                              mappingFlags: MappingFlags): MemoryRegionHandle? {
+    return mmap(null, size.convert(), accessFlags.posixValue, mappingFlags.posixValue, fd, 0)?.let {
+        PosixMemoryRegionHandle(it)
+    }
 }
 
 @ExperimentalForeignApi
-internal actual fun unmapMemory(address: COpaquePointer, size: Long): Boolean {
-    return munmap(address, size.convert()) == 0
+internal actual fun unmapMemory(handle: MemoryRegionHandle, size: Long): Boolean {
+    require(handle is PosixMemoryRegionHandle) { "Handle must be a PosixMemoryRegionHandle" }
+    return munmap(handle.address, size.convert()) == 0
 }
 
 @ExperimentalForeignApi
-internal actual fun lockMemory(address: COpaquePointer, size: Long): Boolean {
-    return mlock(address, size.convert()) == 0
+internal actual fun lockMemory(handle: MemoryRegionHandle, size: Long): Boolean {
+    require(handle is PosixMemoryRegionHandle) { "Handle must be a PosixMemoryRegionHandle" }
+    return mlock(handle.address, size.convert()) == 0
 }
 
 @ExperimentalForeignApi
-internal actual fun unlockMemory(address: COpaquePointer, size: Long): Boolean {
-    return munlock(address, size.convert()) == 0
+internal actual fun unlockMemory(handle: MemoryRegionHandle, size: Long): Boolean {
+    require(handle is PosixMemoryRegionHandle) { "Handle must be a PosixMemoryRegionHandle" }
+    return munlock(handle.address, size.convert()) == 0
 }
 
 @ExperimentalForeignApi
-internal actual fun syncMemory(address: COpaquePointer, size: Long, flags: SyncFlags): Boolean {
-    return msync(address, size.convert(), flags.posixValue) == 0
+internal actual fun syncMemory(handle: MemoryRegionHandle, size: Long, flags: SyncFlags): Boolean {
+    require(handle is PosixMemoryRegionHandle) { "Handle must be a PosixMemoryRegionHandle" }
+    return msync(handle.address, size.convert(), flags.posixValue) == 0
 }
 
 @ExperimentalForeignApi
-internal actual fun protectMemory(address: COpaquePointer, size: Long, flags: AccessFlags): Boolean {
-    return mprotect(address, size.convert(), flags.posixValue) == 0
+internal actual fun protectMemory(handle: MemoryRegionHandle, size: Long, flags: AccessFlags): Boolean {
+    require(handle is PosixMemoryRegionHandle) { "Handle must be a PosixMemoryRegionHandle" }
+    return mprotect(handle.address, size.convert(), flags.posixValue) == 0
 }
 
 @ExperimentalForeignApi

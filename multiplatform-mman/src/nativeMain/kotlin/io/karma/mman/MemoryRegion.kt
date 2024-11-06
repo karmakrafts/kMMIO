@@ -71,7 +71,7 @@ value class MappingFlags private constructor(internal val value: Int) {
 }
 
 @OptIn(ExperimentalForeignApi::class, InternalMmanApi::class)
-class MemoryRegion(baseAddress: COpaquePointer,
+class MemoryRegion(private var handle: MemoryRegionHandle,
                    size: Long,
                    accessFlags: AccessFlags,
                    val mappingFlags: MappingFlags,
@@ -82,12 +82,11 @@ class MemoryRegion(baseAddress: COpaquePointer,
 
         fun map(size: Long, accessFlags: AccessFlags, mappingFlags: MappingFlags = MappingFlags.PRIVATE): MemoryRegion {
             require(size >= 1) { "Memory region size must be larger or equal to 1 byte" }
-            val address = mapMemory(-1,
+            val handle = requireNotNull(mapMemory(-1,
                 size,
                 accessFlags,
-                mappingFlags + MappingFlags.ANON)
-            require(isValidAddress(address)) { "Invalid mapping address" }
-            return MemoryRegion(address as COpaquePointer, size, accessFlags, (mappingFlags + MappingFlags.ANON), -1)
+                mappingFlags + MappingFlags.ANON)) { "Could not create anonymous memory mapping" }
+            return MemoryRegion(handle, size, accessFlags, (mappingFlags + MappingFlags.ANON), -1)
         }
 
         @OptIn(UnsafeNumber::class)
@@ -121,25 +120,19 @@ class MemoryRegion(baseAddress: COpaquePointer,
             }
 
             val mappingSize = fileSize ?: size
-            val address = mapMemory(fd,
+            val handle = requireNotNull(mapMemory(fd,
                 mappingSize,
                 accessFlags,
-                mappingFlags)
-            require(isValidAddress(address)) { "Invalid mapping address for $path" }
-            return MemoryRegion(address as COpaquePointer, mappingSize, accessFlags, mappingFlags, fd)
+                mappingFlags)) { "Could not create file memory mapping for $path" }
+            return MemoryRegion(handle, mappingSize, accessFlags, mappingFlags, fd)
         }
     }
 
     internal var isClosed: Boolean = false
 
-    // Property wrapper to prevent retrieving dangling pointers
     @ExperimentalForeignApi
-    var address: COpaquePointer = baseAddress
-        get() {
-            require(!isClosed) { "MemoryRegion has already been disposed" }
-            return field
-        }
-        internal set
+    val address: COpaquePointer
+        get() = handle.address
 
     var size: Long = size
         internal set
@@ -150,29 +143,23 @@ class MemoryRegion(baseAddress: COpaquePointer,
     var accessFlags: AccessFlags = accessFlags
         internal set
 
-    fun sync(flags: SyncFlags): Boolean = syncMemory(address, size.convert(), flags)
-
-    fun lock(): Boolean = lockMemory(address, size.convert())
-
-    fun unlock(): Boolean = unlockMemory(address, size.convert())
+    fun sync(flags: SyncFlags): Boolean = syncMemory(handle, size.convert(), flags)
+    fun lock(): Boolean = lockMemory(handle, size.convert())
+    fun unlock(): Boolean = unlockMemory(handle, size.convert())
 
     fun protect(flags: AccessFlags): Boolean {
-        if (!protectMemory(address, size.convert(), flags)) return false
+        if (!protectMemory(handle, size.convert(), flags)) return false
         accessFlags = flags
         return true
     }
 
-    fun asSink(bufferSize: Int = 1024): RawSink = MemoryRegionSink(this, bufferSize)
-
-    fun asSource(bufferSize: Int = 1024): RawSource = MemoryRegionSource(this, bufferSize)
-
     @OptIn(UnsafeNumber::class)
     fun resize(size: Long): Boolean {
         require(!isClosed) { "MemoryRegion has already been disposed" }
-        require(unmapMemory(address,
+        require(unmapMemory(handle,
             this.size.convert())) { "Could not unmap memory region for resizing: ${getLastError()}" }
         val result = if (fd != -1) ftruncate(fd, size.convert()) else 0
-        address = requireNotNull(mapMemory(fd,
+        handle = requireNotNull(mapMemory(fd,
             size.convert(),
             accessFlags,
             mappingFlags)) { "Could not remap memory region" }
@@ -190,9 +177,12 @@ class MemoryRegion(baseAddress: COpaquePointer,
         return resize(size)
     }
 
+    fun asSink(bufferSize: Int = 1024): RawSink = MemoryRegionSink(this, bufferSize)
+    fun asSource(bufferSize: Int = 1024): RawSource = MemoryRegionSource(this, bufferSize)
+
     override fun close() {
         require(!isClosed) { "Memory region has already been disposed" }
-        require(unmapMemory(address, size.convert())) { "Could not unmap memory region: ${getLastError()}" }
+        require(unmapMemory(handle, size.convert())) { "Could not unmap memory region: ${getLastError()}" }
         if (fd != -1) close(fd)
         isClosed = true
     }
