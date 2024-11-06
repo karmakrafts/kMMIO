@@ -11,9 +11,6 @@ interface MemoryRegionHandle {
 expect val PAGE_SIZE: Long
 
 @ExperimentalForeignApi
-internal expect fun isValidAddress(address: COpaquePointer?): Boolean
-
-@ExperimentalForeignApi
 internal expect fun mapMemory(fd: Int,
                               size: Long,
                               accessFlags: AccessFlags,
