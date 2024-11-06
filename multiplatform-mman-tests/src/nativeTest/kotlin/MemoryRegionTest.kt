@@ -2,7 +2,6 @@
 
 import io.karma.mman.AccessFlags
 import io.karma.mman.AccessFlags.Companion
-import io.karma.mman.MappingFlags
 import io.karma.mman.MemoryRegion
 import io.karma.mman.PAGE_SIZE
 import io.kotest.assertions.fail

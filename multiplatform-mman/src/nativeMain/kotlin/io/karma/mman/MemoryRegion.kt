@@ -1,5 +1,6 @@
 package io.karma.mman
 
+import io.karma.mman.AccessFlags.Companion
 import kotlinx.cinterop.COpaque
 import kotlinx.cinterop.COpaquePointer
 import kotlinx.cinterop.ExperimentalForeignApi
@@ -37,7 +38,7 @@ import kotlin.math.min
  * @since 29/10/2024
  */
 
-value class SyncFlags private constructor(internal val value: Int) {
+value class SyncFlags private constructor(private val value: Int) {
     companion object {
         val SYNC: SyncFlags = SyncFlags(1)
         val ASYNC: SyncFlags = SyncFlags(2)
@@ -48,7 +49,7 @@ value class SyncFlags private constructor(internal val value: Int) {
     operator fun contains(flags: SyncFlags): Boolean = value and flags.value == flags.value
 }
 
-value class AccessFlags private constructor(internal val value: Int) {
+value class AccessFlags private constructor(private val value: Int) {
     companion object {
         val READ: AccessFlags = AccessFlags(1)
         val WRITE: AccessFlags = AccessFlags(2)
@@ -59,7 +60,7 @@ value class AccessFlags private constructor(internal val value: Int) {
     operator fun contains(flags: AccessFlags): Boolean = value and flags.value == flags.value
 }
 
-value class MappingFlags private constructor(internal val value: Int) {
+value class MappingFlags private constructor(private val value: Int) {
     companion object {
         val ANON: MappingFlags = MappingFlags(1)
         val PRIVATE: MappingFlags = MappingFlags(2)
@@ -79,6 +80,10 @@ class MemoryRegion(private var handle: MemoryRegionHandle,
     companion object {
         val lastError: String
             get() = getLastError()
+
+        fun source(path: Path, bufferSize: Int = 1024): RawSource = map(path, AccessFlags.READ).asSource(bufferSize)
+
+        fun sink(path: Path, bufferSize: Int = 1024): RawSink = map(path, AccessFlags.READ + AccessFlags.WRITE).asSink(bufferSize)
 
         fun map(size: Long, accessFlags: AccessFlags, mappingFlags: MappingFlags = MappingFlags.PRIVATE): MemoryRegion {
             require(size >= 1) { "Memory region size must be larger or equal to 1 byte" }
@@ -144,7 +149,9 @@ class MemoryRegion(private var handle: MemoryRegionHandle,
         internal set
 
     fun sync(flags: SyncFlags): Boolean = syncMemory(handle, size.convert(), flags)
+
     fun lock(): Boolean = lockMemory(handle, size.convert())
+
     fun unlock(): Boolean = unlockMemory(handle, size.convert())
 
     fun protect(flags: AccessFlags): Boolean {
