@@ -1,5 +1,5 @@
 [versions]
-multiplatformMman = "1.1.0"
+multiplatformMman = "1.2.0"
 kotlin = "2.0.10"
 kotlinxIo = "0.5.4"
 kotest = "5.9.1"

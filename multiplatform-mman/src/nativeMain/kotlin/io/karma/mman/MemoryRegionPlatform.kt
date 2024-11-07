@@ -11,25 +11,44 @@ interface MemoryRegionHandle {
 expect val PAGE_SIZE: Long
 
 @ExperimentalForeignApi
-internal expect fun mapMemory(fd: Int,
-                              size: Long,
-                              accessFlags: AccessFlags,
-                              mappingFlags: MappingFlags): MemoryRegionHandle?
+internal expect fun mapMemory(
+    fd: Int,
+    size: Long,
+    accessFlags: AccessFlags,
+    mappingFlags: MappingFlags
+): MemoryRegionHandle?
 
 @ExperimentalForeignApi
-internal expect fun unmapMemory(handle: MemoryRegionHandle, size: Long): Boolean
+internal expect fun unmapMemory(
+    handle: MemoryRegionHandle,
+    size: Long
+): Boolean
 
 @ExperimentalForeignApi
-internal expect fun lockMemory(handle: MemoryRegionHandle, size: Long): Boolean
+internal expect fun lockMemory(
+    handle: MemoryRegionHandle,
+    size: Long
+): Boolean
 
 @ExperimentalForeignApi
-internal expect fun unlockMemory(handle: MemoryRegionHandle, size: Long): Boolean
+internal expect fun unlockMemory(
+    handle: MemoryRegionHandle,
+    size: Long
+): Boolean
 
 @ExperimentalForeignApi
-internal expect fun syncMemory(handle: MemoryRegionHandle, size: Long, flags: SyncFlags): Boolean
+internal expect fun syncMemory(
+    handle: MemoryRegionHandle,
+    size: Long,
+    flags: SyncFlags
+): Boolean
 
 @ExperimentalForeignApi
-internal expect fun protectMemory(handle: MemoryRegionHandle, size: Long, flags: AccessFlags): Boolean
+internal expect fun protectMemory(
+    handle: MemoryRegionHandle,
+    size: Long,
+    flags: AccessFlags
+): Boolean
 
 @ExperimentalForeignApi
 internal expect fun getLastError(): String
