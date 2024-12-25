@@ -63,9 +63,7 @@ import platform.windows.VirtualUnlock
 
 @OptIn(ExperimentalForeignApi::class)
 internal class WindowsMemoryRegionHandle(
-    override val address: COpaquePointer,
-    val mappingHandle: HANDLE,
-    val securityDescriptor: SECURITY_ATTRIBUTES
+    override val address: COpaquePointer, val mappingHandle: HANDLE, val securityDescriptor: SECURITY_ATTRIBUTES
 ) : MemoryRegionHandle
 
 @OptIn(ExperimentalForeignApi::class)
@@ -102,18 +100,14 @@ actual val PAGE_SIZE: Long by lazy {
 
 @ExperimentalForeignApi
 internal actual fun mapMemory(
-    fd: Int,
-    size: Long,
-    accessFlags: AccessFlags,
-    mappingFlags: MappingFlags
+    fd: Int, size: Long, accessFlags: AccessFlags, mappingFlags: MappingFlags
 ): MemoryRegionHandle? = memScoped {
     val hiSize = (size shr 32) and 0xFFFFFFFF
     val loSize = size and 0xFFFFFFFF
 
     val securityDescriptor = nativeHeap.alloc<SECURITY_DESCRIPTOR>()
     if (InitializeSecurityDescriptor(
-            securityDescriptor.ptr,
-            SECURITY_DESCRIPTOR_REVISION.convert()
+            securityDescriptor.ptr, SECURITY_DESCRIPTOR_REVISION.convert()
         ) == 0
     ) return@memScoped null
     val securityAttributes = nativeHeap.alloc<SECURITY_ATTRIBUTES> {
@@ -124,27 +118,17 @@ internal actual fun mapMemory(
 
     fun map(handle: HANDLE?): MemoryRegionHandle? {
         val mappingHandle = CreateFileMappingW(
-            handle,
-            securityAttributes.ptr,
-            accessFlags.pageProtection,
-            hiSize.convert(),
-            loSize.convert(),
-            null
+            handle, securityAttributes.ptr, accessFlags.pageProtection, hiSize.convert(), loSize.convert(), null
         )
         if (mappingHandle == INVALID_HANDLE_VALUE) return null
         val address = MapViewOfFileEx(
-            mappingHandle,
-            accessFlags.mappingAccess,
+            mappingHandle, accessFlags.mappingAccess,
             0.convert(), // Size must be derived from the mapping automatically
-            0.convert(),
-            0.convert(),
-            null
+            0.convert(), 0.convert(), null
         )
         return if (mappingHandle == null || address == null) null
         else WindowsMemoryRegionHandle(
-            address,
-            mappingHandle,
-            securityAttributes
+            address, mappingHandle, securityAttributes
         )
     }
 
@@ -158,8 +142,7 @@ internal actual fun mapMemory(
 
 @ExperimentalForeignApi
 internal actual fun unmapMemory(
-    handle: MemoryRegionHandle,
-    size: Long
+    handle: MemoryRegionHandle, size: Long
 ): Boolean {
     require(handle is WindowsMemoryRegionHandle) { "Handle must be WindowsMemoryRegionHandle" }
     if (UnmapViewOfFile(handle.address) == 0) return false
@@ -171,54 +154,44 @@ internal actual fun unmapMemory(
 
 @ExperimentalForeignApi
 internal actual fun lockMemory(
-    handle: MemoryRegionHandle,
-    size: Long
+    handle: MemoryRegionHandle, size: Long
 ): Boolean {
     require(handle is WindowsMemoryRegionHandle) { "Handle must be WindowsMemoryRegionHandle" }
     return VirtualLock(
-        handle.address,
-        size.convert()
+        handle.address, size.convert()
     ) != 0
 }
 
 @ExperimentalForeignApi
 internal actual fun unlockMemory(
-    handle: MemoryRegionHandle,
-    size: Long
+    handle: MemoryRegionHandle, size: Long
 ): Boolean {
     require(handle is WindowsMemoryRegionHandle) { "Handle must be WindowsMemoryRegionHandle" }
     return VirtualUnlock(
-        handle.address,
-        size.convert()
+        handle.address, size.convert()
     ) != 0
 }
 
 @ExperimentalForeignApi
 internal actual fun syncMemory(
-    handle: MemoryRegionHandle,
-    size: Long,
-    flags: SyncFlags
+    handle: MemoryRegionHandle, size: Long, flags: SyncFlags
 ): Boolean {
-    require(handle is WindowsMemoryRegionHandle) { "Handle must be WindowsMemoryRegionHandle" } // Flags are completely ignored on Windows at the moment
+    require(
+        handle is WindowsMemoryRegionHandle
+    ) { "Handle must be WindowsMemoryRegionHandle" } // Flags are completely ignored on Windows at the moment
     return FlushViewOfFile(
-        handle.address,
-        size.convert()
+        handle.address, size.convert()
     ) != 0
 }
 
 @ExperimentalForeignApi
 internal actual fun protectMemory(
-    handle: MemoryRegionHandle,
-    size: Long,
-    flags: AccessFlags
+    handle: MemoryRegionHandle, size: Long, flags: AccessFlags
 ): Boolean = memScoped {
     require(handle is WindowsMemoryRegionHandle) { "Handle must be WindowsMemoryRegionHandle" }
     val oldPageProtection = alloc<DWORDVar>()
     return VirtualProtect(
-        handle.address,
-        size.convert(),
-        flags.pageProtection,
-        oldPageProtection.ptr
+        handle.address, size.convert(), flags.pageProtection, oldPageProtection.ptr
     ) != 0
 }
 
@@ -228,14 +201,12 @@ internal actual fun protectMemory(
  */
 @ExperimentalForeignApi
 private fun makeLangId(
-    primary: Int,
-    secondary: Int
+    primary: Int, secondary: Int
 ): LANGID = ((secondary shl 10) or primary).convert()
 
 @ExperimentalForeignApi
 private val defaultLangId: LANGID = makeLangId(
-    LANG_NEUTRAL,
-    SUBLANG_DEFAULT
+    LANG_NEUTRAL, SUBLANG_DEFAULT
 )
 
 @ExperimentalForeignApi
@@ -247,13 +218,7 @@ internal actual fun getLastError(): String = memScoped {
     if (error.convert<Int>() == 0) return@memScoped "Unknown error"
     val buffer = allocPointerTo<PWSTRVar>()
     if (FormatMessageW(
-            defaultMessageFlags,
-            null,
-            error,
-            defaultLangId.convert(),
-            buffer.ptr.reinterpret(),
-            0.convert(),
-            null
+            defaultMessageFlags, null, error, defaultLangId.convert(), buffer.ptr.reinterpret(), 0.convert(), null
         ).convert<Int>() == 0
     ) return@memScoped "Unknown error"
     val message = buffer.pointed?.value?.toKStringFromUtf16()

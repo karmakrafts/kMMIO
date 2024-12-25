@@ -34,13 +34,31 @@ kotlin {
     mingwX64()
     linuxX64()
     linuxArm64()
+    androidNativeX64()
+    androidNativeArm64()
+    androidNativeArm32()
     macosX64()
     macosArm64()
+    iosX64()
+    iosArm64()
+    iosSimulatorArm64()
     applyDefaultHierarchyTemplate()
     sourceSets {
-        val posixMain by creating { dependsOn(nativeMain.get()) }
-        linuxMain { dependsOn(posixMain) }
-        macosMain { dependsOn(posixMain) }
+        val posixMain by creating {
+            dependsOn(nativeMain.get())
+        }
+        linuxMain {
+            dependsOn(posixMain)
+        }
+        androidNativeMain {
+            dependsOn(posixMain)
+        }
+        macosMain {
+            dependsOn(posixMain)
+        }
+        iosMain {
+            dependsOn(posixMain)
+        }
         commonMain {
             dependencies {
                 implementation(libs.kotlinx.io.bytestring)

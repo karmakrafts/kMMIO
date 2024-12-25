@@ -65,8 +65,7 @@ value class MappingFlags private constructor(private val value: Int) {
 }
 
 @OptIn(
-    ExperimentalForeignApi::class,
-    InternalMmanApi::class
+    ExperimentalForeignApi::class, InternalMmanApi::class
 )
 class MemoryRegion(
     private var handle: MemoryRegionHandle,
@@ -80,41 +79,28 @@ class MemoryRegion(
             get() = getLastError()
 
         fun source(
-            path: Path,
-            bufferSize: Int = PAGE_SIZE.toInt()
+            path: Path, bufferSize: Int = PAGE_SIZE.toInt()
         ): RawSource = map(
-            path,
-            AccessFlags.READ
+            path, AccessFlags.READ
         ).asSource(bufferSize)
 
         fun sink(
-            path: Path,
-            bufferSize: Int = PAGE_SIZE.toInt()
+            path: Path, bufferSize: Int = PAGE_SIZE.toInt()
         ): RawSink = map(
-            path,
-            AccessFlags.READ + AccessFlags.WRITE
+            path, AccessFlags.READ + AccessFlags.WRITE
         ).asSink(bufferSize)
 
         fun map(
-            size: Long,
-            accessFlags: AccessFlags,
-            mappingFlags: MappingFlags = MappingFlags.PRIVATE
+            size: Long, accessFlags: AccessFlags, mappingFlags: MappingFlags = MappingFlags.PRIVATE
         ): MemoryRegion {
             require(size >= 1) { "Memory region size must be larger or equal to 1 byte" }
             val handle = requireNotNull(
                 mapMemory(
-                    -1,
-                    size,
-                    accessFlags,
-                    mappingFlags + MappingFlags.ANON
+                    -1, size, accessFlags, mappingFlags + MappingFlags.ANON
                 )
             ) { "Could not create anonymous memory mapping" }
             return MemoryRegion(
-                handle,
-                size,
-                accessFlags,
-                (mappingFlags + MappingFlags.ANON),
-                -1
+                handle, size, accessFlags, (mappingFlags + MappingFlags.ANON), -1
             )
         }
 
@@ -142,14 +128,11 @@ class MemoryRegion(
             if (AccessFlags.EXEC in accessFlags) perms = perms or S_IXUSR or S_IXGRP or S_IXOTH
 
             val fd = open(
-                path.toString(),
-                openFlags,
-                perms.convert<mode_t>()
+                path.toString(), openFlags, perms.convert<mode_t>()
             )
             if (isWrite && size != fileSize) {
                 if (ftruncate(
-                        fd,
-                        size.convert()
+                        fd, size.convert()
                     ) != 0
                 ) {
                     close(fd)
@@ -161,18 +144,11 @@ class MemoryRegion(
             val mappingSize = fileSize ?: size
             val handle = requireNotNull(
                 mapMemory(
-                    fd,
-                    mappingSize,
-                    accessFlags,
-                    mappingFlags
+                    fd, mappingSize, accessFlags, mappingFlags
                 )
             ) { "Could not create file memory mapping for $path" }
             return MemoryRegion(
-                handle,
-                mappingSize,
-                accessFlags,
-                mappingFlags,
-                fd
+                handle, mappingSize, accessFlags, mappingFlags, fd
             )
         }
     }
@@ -193,26 +169,20 @@ class MemoryRegion(
         internal set
 
     fun sync(flags: SyncFlags): Boolean = syncMemory(
-        handle,
-        size.convert(),
-        flags
+        handle, size.convert(), flags
     )
 
     fun lock(): Boolean = lockMemory(
-        handle,
-        size.convert()
+        handle, size.convert()
     )
 
     fun unlock(): Boolean = unlockMemory(
-        handle,
-        size.convert()
+        handle, size.convert()
     )
 
     fun protect(flags: AccessFlags): Boolean {
         if (!protectMemory(
-                handle,
-                size.convert(),
-                flags
+                handle, size.convert(), flags
             )
         ) return false
         accessFlags = flags
@@ -224,21 +194,16 @@ class MemoryRegion(
         require(!isClosed) { "MemoryRegion has already been disposed" }
         require(
             unmapMemory(
-                handle,
-                this.size.convert()
+                handle, this.size.convert()
             )
         ) { "Could not unmap memory region for resizing: ${getLastError()}" }
         val result = if (fd != -1) ftruncate(
-            fd,
-            size.convert()
+            fd, size.convert()
         )
         else 0
         handle = requireNotNull(
             mapMemory(
-                fd,
-                size.convert(),
-                accessFlags,
-                mappingFlags
+                fd, size.convert(), accessFlags, mappingFlags
             )
         ) { "Could not remap memory region" }
         this.size = size
@@ -256,21 +221,18 @@ class MemoryRegion(
     }
 
     fun asSink(bufferSize: Int = PAGE_SIZE.toInt()): RawSink = MemoryRegionSink(
-        this,
-        bufferSize
+        this, bufferSize
     )
 
     fun asSource(bufferSize: Int = PAGE_SIZE.toInt()): RawSource = MemoryRegionSource(
-        this,
-        bufferSize
+        this, bufferSize
     )
 
     override fun close() {
         require(!isClosed) { "Memory region has already been disposed" }
         require(
             unmapMemory(
-                handle,
-                size.convert()
+                handle, size.convert()
             )
         ) { "Could not unmap memory region: ${getLastError()}" }
         if (fd != -1) close(fd)
@@ -280,46 +242,37 @@ class MemoryRegion(
 
 @OptIn(ExperimentalForeignApi::class)
 internal class MemoryRegionSource(
-    private val region: MemoryRegion,
-    bufferSize: Int
+    private val region: MemoryRegion, bufferSize: Int
 ) : RawMemorySource(
-    region.address,
-    region.size,
-    bufferSize
+    region.address, region.size, bufferSize
 ) {
     override fun readAtMostTo(
-        sink: Buffer,
-        byteCount: Long
+        sink: Buffer, byteCount: Long
     ): Long {
         require(!region.isClosed) { "Memory region has already been disposed" }
-        require(AccessFlags.READ in region.accessFlags || AccessFlags.EXEC in region.accessFlags) { "Cannot read from protected memory" }
+        require(
+            AccessFlags.READ in region.accessFlags || AccessFlags.EXEC in region.accessFlags
+        ) { "Cannot read from protected memory" }
         return super.readAtMostTo(
-            sink,
-            byteCount
+            sink, byteCount
         )
     }
 }
 
 @OptIn(ExperimentalForeignApi::class)
 internal class MemoryRegionSink(
-    private val region: MemoryRegion,
-    bufferSize: Int
-) : RawMemorySink(region.address,
-    region.size,
-    bufferSize,
-    {
-        require(!region.isClosed) { "Memory region has already been disposed" }
-        require(region.sync(SyncFlags.SYNC)) { "Memory region could not be synced: ${getLastError()}" }
-    }) {
+    private val region: MemoryRegion, bufferSize: Int
+) : RawMemorySink(region.address, region.size, bufferSize, {
+    require(!region.isClosed) { "Memory region has already been disposed" }
+    require(region.sync(SyncFlags.SYNC)) { "Memory region could not be synced: ${getLastError()}" }
+}) {
     override fun write(
-        source: Buffer,
-        byteCount: Long
+        source: Buffer, byteCount: Long
     ) {
         require(!region.isClosed) { "Memory region has already been disposed" }
         require(AccessFlags.WRITE in region.accessFlags) { "Cannot write to protected memory" }
         super.write(
-            source,
-            byteCount
+            source, byteCount
         )
     }
 }
