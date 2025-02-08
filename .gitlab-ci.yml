@@ -1,116 +1,146 @@
+workflow:
+  auto_cancel:
+    on_new_commit: interruptible
+  rules:
+    - if: $CI_PIPELINE_SOURCE == "merge_request_event"
+    - if: $CI_PIPELINE_SOURCE == "push"
+    - if: $CI_PIPELINE_SOURCE == "schedule"
+
 stages:
+  - build
+  - security
   - test
   - publish
-  - release
 
-cache:
-  paths:
-    - .gradle/wrapper
-    - .gradle/caches
-    - .kotlin
+variables:
+  GRADLE_OPTS: -Dorg.gradle.daemon=false
 
-test-linux:
+# ------------------------------ Conditions
+
+.if-merge-request-or-main: &if-merge-request-or-main
+  - if: $CI_COMMIT_BRANCH == $CI_DEFAULT_BRANCH
+  - if: $CI_MERGE_REQUEST_SOURCE_BRANCH_NAME
+  - if: $CI_PIPELINE_SOURCE == "schedule"
+    when: never
+
+.if-main: &if-main
+  - if: $CI_COMMIT_BRANCH == $CI_DEFAULT_BRANCH
+  - if: $CI_PIPELINE_SOURCE == "schedule"
+    when: never
+
+.if-release: &if-release
+  - if: '$CI_COMMIT_TAG =~ /^\d+.\d+.\d+.*/'
+  - if: $CI_PIPELINE_SOURCE == "schedule"
+    when: never
+
+# ------------------------------ Security
+
+security:dependencies:
+  stage: security
+  interruptible: true
+  needs: [ ]
+  variables:
+    TRIVY_CACHE_DIR: ".trivycache/"
+  cache:
+    paths:
+      - .trivycache/
+  rules:
+    - if: $CI_PIPELINE_SOURCE == "merge_request_event"
+      allow_failure: true
+    - if: '$CI_COMMIT_TAG =~ /^\d+.\d+.\d+.*/'
+      allow_failure: false
+    - if: $CI_PIPELINE_SOURCE == "schedule"
+      allow_failure: false
+  artifacts:
+    when: always
+    reports:
+      dependency_scanning: report.json
+  script:
+    - trivy repo ./ --exit-code 0
+    - trivy repo ./ --exit-code 0 --format template --template "@/contrib/gitlab.tpl" --output report.json
+    - trivy repo ./ --exit-code 1 --severity CRITICAL
+  tags:
+    - linux
+
+# ------------------------------ Build
+
+build:
+  stage: build
+  rules:
+    - *if-merge-request-or-main
+  before_script:
+    - export JAVA_HOME=/Library/Java/JavaVirtualMachines/zulu-17.jdk/Contents/Home
+  script:
+    - ./gradlew
+      clean
+      link{MacosX64,MacosArm64,IosX64,IosArm64,IosSimulatorArm64,LinuxX64,LinuxArm64,AndroidNativeX64,AndroidNativeArm64,AndroidNativeArm32,MingwX64}
+  tags:
+    - macos
+
+# ------------------------------ Tests
+
+test:linux:
   stage: test
+  rules:
+    - *if-merge-request-or-main
   before_script:
     - export JAVA_HOME=/home/sdks/zulu-17
   script:
     - ./gradlew
       clean
       linuxX64Test
-      --no-daemon
-      --stacktrace
-  only:
-    - master
   tags:
     - linux
 
-test-macos:
+test:macos:
   stage: test
+  rules:
+    - *if-merge-request-or-main
   before_script:
     - export JAVA_HOME=/Library/Java/JavaVirtualMachines/zulu-17.jdk/Contents/Home
   script:
     - ./gradlew
       clean
       macosArm64Test
-      --no-daemon
-      --stacktrace
-  only:
-    - master
   tags:
     - macos
 
-test-windows:
+test:windows:
   stage: test
+  rules:
+    - *if-merge-request-or-main
   script:
     - ./gradlew
       clean
       mingwX64Test
-      --no-daemon
-      --stacktrace
-  only:
-    - master
   tags:
     - windows
 
-publish-linux:
-  stage: publish
-  before_script:
-    - export JAVA_HOME=/home/sdks/zulu-17
-  script:
-    - ./gradlew
-      -DpublishDocs.root=/var/www/docs/multiplatform-mman
-      clean
-      publish{KotlinMultiplatform,LinuxX64,LinuxArm64,AndroidNativeX64,AndroidNativeArm64,AndroidNativeArm32}PublicationToGitlabRepository
-      publishDocs
-      --no-daemon
-      --stacktrace
-  only:
-    - master
-  tags:
-    - linux
+# ------------------------------ Publish
 
-publish-windows:
+publish:artifacts:
   stage: publish
-  script:
-    - ./gradlew
-      clean
-      publishMingwX64PublicationToGitlabRepository
-      --no-daemon
-      --stacktrace
-  only:
-    - master
-  tags:
-    - windows
-
-publish-macos:
-  stage: publish
+  rules:
+    - *if-main
+    - *if-release
   before_script:
     - export JAVA_HOME=/Library/Java/JavaVirtualMachines/zulu-17.jdk/Contents/Home
   script:
     - ./gradlew
       clean
-      publish{MacosX64,MacosArm64,IosX64,IosArm64,IosSimulatorArm64}PublicationToGitlabRepository
-      --no-daemon
-      --stacktrace
-  only:
-    - master
+      publish{KotlinMultiplatform,LinuxX64,LinuxArm64,AndroidNativeX64,AndroidNativeArm64,AndroidNativeArm32,MingwX64,MacosX64,MacosArm64,IosX64,IosArm64,IosSimulatorArm64}PublicationToGitlabRepository
   tags:
     - macos
 
-create-release:
-  stage: release
+publish:documentation:
+  stage: publish
   rules:
-    - if: $CI_COMMIT_TAG
-      when: never
-    - if: $CI_COMMIT_BRANCH == $CI_DEFAULT_BRANCH
+    - *if-release
   before_script:
-    - echo "Fetching project version from libs.versions.toml"
-    - export PROJECT_VERSION=$(./gradlew generateVersionInfo --quiet)
+    - export JAVA_HOME=/home/sdks/zulu-17
   script:
-    - echo "Creating release for version $PROJECT_VERSION.$CI_PIPELINE_IID"
-  release:
-    tag_name: '$(cat .version).$CI_PIPELINE_IID'
-    description: '$(cat .version).$CI_PIPELINE_IID'
-    ref: '$CI_COMMIT_SHA'
+    - ./gradlew
+      -DpublishDocs.root=/var/www/docs/multiplatform-mman
+      publishDocs
   tags:
     - linux
