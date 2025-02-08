@@ -1,5 +1,5 @@
 /*
- * Copyright 2024 Karma Krafts & associates
+ * Copyright (C) Karma Krafts & associates 2025
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -14,9 +14,7 @@
  * limitations under the License.
  */
 
-import java.util.Properties
 import kotlin.io.path.div
-import kotlin.io.path.inputStream
 import kotlin.io.path.writeText
 
 plugins {
@@ -24,27 +22,24 @@ plugins {
     alias(libs.plugins.dokka) apply false
 }
 
-val buildConfig: Properties = Properties().apply {
-    (rootDir.toPath() / "build.properties").inputStream().use {
-        load(it)
-    }
-}
-val baseVersion: String = libs.versions.multiplatformMman.get()
+group = "io.karma.kmbed"
+version = CI.getDefaultVersion(libs.versions.multiplatformMman)
 
 val generateVersionInfo by tasks.registering {
     doLast {
-        println(baseVersion)
-        (rootDir.toPath() / ".version").writeText(baseVersion)
+        val version = libs.versions.multiplatformMman.get()
+        println(version)
+        (rootDir.toPath() / ".version").writeText(version)
     }
 }
 
 allprojects {
-    group = buildConfig["group"] as String
-    version = "$baseVersion.${System.getenv("CI_PIPELINE_IID") ?: 0}"
+    group = rootProject.group
+    version = rootProject.version
 
     repositories {
-        mavenLocal()
         mavenCentral()
         google()
+        maven("https://files.karmakrafts.dev/maven")
     }
 }
