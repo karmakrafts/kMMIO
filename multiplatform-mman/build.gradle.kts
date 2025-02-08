@@ -14,6 +14,7 @@
  * limitations under the License.
  */
 
+import CI.authenticatedPackageRegistry
 import org.jetbrains.kotlin.gradle.tasks.CInteropProcess
 
 /*
@@ -111,20 +112,8 @@ tasks {
 }
 
 publishing {
-    System.getenv("CI_API_V4_URL")?.let { apiUrl ->
-        repositories {
-            maven {
-                url = uri("$apiUrl/projects/${System.getenv("CI_PROJECT_ID")}/packages/maven")
-                name = "GitLab"
-                credentials(HttpHeaderCredentials::class) {
-                    name = "Job-Token"
-                    value = System.getenv("CI_JOB_TOKEN")
-                }
-                authentication {
-                    create("header", HttpHeaderAuthentication::class)
-                }
-            }
-        }
+    repositories {
+        authenticatedPackageRegistry()
     }
     publications.configureEach {
         if (this is MavenPublication) {
