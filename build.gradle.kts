@@ -14,9 +14,6 @@
  * limitations under the License.
  */
 
-import kotlin.io.path.div
-import kotlin.io.path.writeText
-
 plugins {
     alias(libs.plugins.kotlin.multiplatform) apply false
     alias(libs.plugins.dokka) apply false
@@ -24,14 +21,6 @@ plugins {
 
 group = "io.karma.kmbed"
 version = CI.getDefaultVersion(libs.versions.multiplatformMman)
-
-val generateVersionInfo by tasks.registering {
-    doLast {
-        val version = libs.versions.multiplatformMman.get()
-        println(version)
-        (rootDir.toPath() / ".version").writeText(version)
-    }
-}
 
 allprojects {
     group = rootProject.group
