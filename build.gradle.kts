@@ -19,7 +19,7 @@ plugins {
     alias(libs.plugins.dokka) apply false
 }
 
-group = "io.karma.kmbed"
+group = "io.karma.mman"
 version = CI.getDefaultVersion(libs.versions.multiplatformMman)
 
 allprojects {

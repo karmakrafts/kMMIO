@@ -14,9 +14,6 @@
  * limitations under the License.
  */
 
-import CI.authenticatedPackageRegistry
-import org.jetbrains.kotlin.gradle.tasks.CInteropProcess
-
 /*
  * Copyright 2024 Karma Krafts & associates
  *
@@ -113,7 +110,7 @@ tasks {
 
 publishing {
     repositories {
-        authenticatedPackageRegistry()
+        with(CI) { authenticatedPackageRegistry() }
     }
     publications.configureEach {
         if (this is MavenPublication) {
