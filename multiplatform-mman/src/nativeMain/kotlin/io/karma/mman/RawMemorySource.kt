@@ -60,9 +60,7 @@ open class RawMemorySource(
                     chunkSize.convert()
                 )
             }
-            sink.write(
-                buffer, endIndex = chunkSize.toInt()
-            )
+            sink.write(buffer, endIndex = chunkSize.toInt())
             readBytes += chunkSize
         }
 

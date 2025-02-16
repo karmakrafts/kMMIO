@@ -75,9 +75,7 @@ value class MappingFlags private constructor(private val value: Int) {
     operator fun contains(flags: MappingFlags): Boolean = value and flags.value == flags.value
 }
 
-@OptIn(
-    ExperimentalForeignApi::class, InternalMmanApi::class
-)
+@OptIn(ExperimentalForeignApi::class, InternalMmanApi::class)
 class MemoryRegion(
     private var handle: MemoryRegionHandle,
     size: Long,

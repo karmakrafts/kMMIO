@@ -1,6 +1,6 @@
 # Multiplatform mman
-[![](https://git.karmakrafts.dev/kk/multiplatform-mman/badges/master/pipeline.svg)](https://git.karmakrafts.dev/kk/kmbed/-/pipelines)
-[![](https://img.shields.io/maven-metadata/v?metadataUrl=https%3A%2F%2Ffiles.karmakrafts.dev%2Fmaven%2Fio%2Fkarma%2Fmman%2Fmultiplatform-mman%2Fmaven-metadata.xml)](https://git.karmakrafts.dev/kk/kmbed/-/packages)
+[![](https://git.karmakrafts.dev/kk/multiplatform-mman/badges/master/pipeline.svg)](https://git.karmakrafts.dev/kk/multiplatform-mman/-/pipelines)
+[![](https://img.shields.io/maven-metadata/v?metadataUrl=https%3A%2F%2Ffiles.karmakrafts.dev%2Fmaven%2Fio%2Fkarma%2Fmman%2Fmultiplatform-mman%2Fmaven-metadata.xml)](https://git.karmakrafts.dev/kk/multiplatform-mman/-/packages)
 
 Lightweight wrapper around mman for Kotlin/Native to allow for easy MMIO.
 
