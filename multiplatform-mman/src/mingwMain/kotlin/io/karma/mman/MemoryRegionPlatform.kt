@@ -133,9 +133,12 @@ internal actual fun mapMemory(
         )
         if (mappingHandle == INVALID_HANDLE_VALUE) return null
         val address = MapViewOfFileEx(
-            mappingHandle, accessFlags.mappingAccess,
+            mappingHandle,
+            accessFlags.mappingAccess,
             0.convert(), // Size must be derived from the mapping automatically
-            0.convert(), 0.convert(), null
+            0.convert(),
+            0.convert(),
+            null
         )
         return if (mappingHandle == null || address == null) null
         else WindowsMemoryRegionHandle(
@@ -221,7 +224,8 @@ private val defaultLangId: LANGID = makeLangId(
 )
 
 @ExperimentalForeignApi
-private val defaultMessageFlags: DWORD = (FORMAT_MESSAGE_ALLOCATE_BUFFER or FORMAT_MESSAGE_FROM_SYSTEM or FORMAT_MESSAGE_IGNORE_INSERTS).convert()
+private val defaultMessageFlags: DWORD =
+    (FORMAT_MESSAGE_ALLOCATE_BUFFER or FORMAT_MESSAGE_FROM_SYSTEM or FORMAT_MESSAGE_IGNORE_INSERTS).convert()
 
 @ExperimentalForeignApi
 internal actual fun getLastError(): String = memScoped {

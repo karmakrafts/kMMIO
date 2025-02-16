@@ -62,7 +62,8 @@ open class RawMemorySink(
             if (chunkSize == -1L) break // EOF
             buffer.usePinned {
                 memcpy(
-                    interpretCPointer<COpaque>(address.rawValue + position + writtenBytes), it.addressOf(0),
+                    interpretCPointer<COpaque>(address.rawValue + position + writtenBytes),
+                    it.addressOf(0),
                     chunkSize.convert()
                 )
             }

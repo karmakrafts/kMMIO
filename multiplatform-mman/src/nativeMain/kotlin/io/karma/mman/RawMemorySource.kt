@@ -56,7 +56,8 @@ open class RawMemorySource(
             )
             buffer.usePinned {
                 memcpy(
-                    it.addressOf(0), interpretCPointer<COpaque>(address.rawValue + position + readBytes),
+                    it.addressOf(0),
+                    interpretCPointer<COpaque>(address.rawValue + position + readBytes),
                     chunkSize.convert()
                 )
             }
