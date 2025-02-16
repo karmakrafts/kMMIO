@@ -68,6 +68,7 @@ security:dependencies:
 
 build:
   stage: build
+  interruptible: true
   rules:
     - *if-merge-request-or-main
   before_script:
@@ -83,6 +84,7 @@ build:
 
 test:linux:
   stage: test
+  interruptible: true
   rules:
     - *if-merge-request-or-main
   before_script:
@@ -96,6 +98,7 @@ test:linux:
 
 test:macos:
   stage: test
+  interruptible: true
   rules:
     - *if-merge-request-or-main
   before_script:
@@ -109,6 +112,7 @@ test:macos:
 
 test:windows:
   stage: test
+  interruptible: true
   rules:
     - *if-merge-request-or-main
   script:
