@@ -74,7 +74,7 @@ private inline val MappingFlags.posixValue: Int
         return flags
     }
 
-actual val PAGE_SIZE: Long by lazy {
+actual val pageSize: Long by lazy {
     getpagesize().toLong()
 }
 
@@ -140,4 +140,4 @@ internal actual fun protectMemory(
 }
 
 @ExperimentalForeignApi
-internal actual fun getLastError(): String = strerror(errno)?.toKString() ?: "Unknown error"
+internal actual fun getLastError(): String? = strerror(errno)?.toKString()

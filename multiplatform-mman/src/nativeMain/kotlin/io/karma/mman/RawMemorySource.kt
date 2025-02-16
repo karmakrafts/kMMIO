@@ -29,11 +29,20 @@ import kotlinx.io.RawSource
 import platform.posix.memcpy
 import kotlin.math.min
 
+/**
+ * A [RawSource] implementation which directly reads from an unmanaged memory block.
+ *
+ * @param address The base address of the memory block to read from.
+ * @param size The total size of the memory block in bytes.
+ * @param bufferSize The size of the internal buffer to be created in bytes.
+ */
 @OptIn(UnsafeNumber::class)
 @ExperimentalForeignApi
-open class RawMemorySource(
-    val address: COpaquePointer, val size: Long, val bufferSize: Int = PAGE_SIZE.toInt()
-) : RawSource {
+open class RawMemorySource( // @formatter:off
+    val address: COpaquePointer,
+    val size: Long,
+    val bufferSize: Int = pageSize.toInt()
+) : RawSource { // @formatter:on
     protected var isClosed: Boolean = false
 
     var position: Long = 0

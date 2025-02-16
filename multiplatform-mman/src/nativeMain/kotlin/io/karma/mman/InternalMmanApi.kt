@@ -16,6 +16,10 @@
 
 package io.karma.mman
 
+/**
+ * Denotes a declaration which is internal to Multiplatform mman
+ * but may be used by opting in using [OptIn].
+ */
 @RequiresOptIn(message = "This API is internal to Mman and shouldn't be used directly")
 @Retention(AnnotationRetention.BINARY)
 annotation class InternalMmanApi

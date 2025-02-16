@@ -101,7 +101,7 @@ private inline val AccessFlags.mappingAccess: DWORD
     }
 
 @OptIn(ExperimentalForeignApi::class)
-actual val PAGE_SIZE: Long by lazy {
+actual val pageSize: Long by lazy {
     memScoped {
         val info = alloc<SYSTEM_INFO>()
         GetSystemInfo(info.ptr)
@@ -228,7 +228,7 @@ private val defaultMessageFlags: DWORD =
     (FORMAT_MESSAGE_ALLOCATE_BUFFER or FORMAT_MESSAGE_FROM_SYSTEM or FORMAT_MESSAGE_IGNORE_INSERTS).convert()
 
 @ExperimentalForeignApi
-internal actual fun getLastError(): String = memScoped {
+internal actual fun getLastError(): String? = memScoped {
     val error = GetLastError()
     if (error.convert<Int>() == 0) return@memScoped "Unknown error"
     val buffer = allocPointerTo<PWSTRVar>()
@@ -238,5 +238,5 @@ internal actual fun getLastError(): String = memScoped {
     ) return@memScoped "Unknown error"
     val message = buffer.pointed?.value?.toKStringFromUtf16()
     LocalFree(buffer.value) // Since Windows allocates this message on the heap, explicitly free it
-    message ?: "Unknown error"
+    message
 }

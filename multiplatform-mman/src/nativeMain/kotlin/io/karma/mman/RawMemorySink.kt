@@ -29,12 +29,20 @@ import kotlinx.io.RawSink
 import platform.posix.memcpy
 import kotlin.math.min
 
+/**
+ * A [RawSink] implementation which directly writes to an unmanaged memory block.
+ *
+ * @param address The base address of the memory block to write to.
+ * @param size The total size of the memory block in bytes.
+ * @param bufferSize The size of the internal buffer to be created in bytes.
+ * @param flushCallback A function which is called everytime the sink is flushed.
+ */
 @OptIn(UnsafeNumber::class)
 @ExperimentalForeignApi
 open class RawMemorySink(
     val address: COpaquePointer,
     val size: Long,
-    val bufferSize: Int = PAGE_SIZE.toInt(),
+    val bufferSize: Int = pageSize.toInt(),
     private val flushCallback: () -> Unit = {}
 ) : RawSink {
     protected var isClosed: Boolean = false

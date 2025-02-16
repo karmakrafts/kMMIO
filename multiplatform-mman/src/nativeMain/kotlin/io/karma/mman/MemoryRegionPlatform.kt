@@ -19,12 +19,22 @@ package io.karma.mman
 import kotlinx.cinterop.COpaquePointer
 import kotlinx.cinterop.ExperimentalForeignApi
 
+/**
+ * An opaque, type-safe platform-specific handle to a
+ * mapped memory region.
+ */
 interface MemoryRegionHandle {
+    /**
+     * The base address of the underlying memory mapping.
+     */
     @ExperimentalForeignApi
     val address: COpaquePointer
 }
 
-expect val PAGE_SIZE: Long
+/**
+ * The current system page size in bytes.
+ */
+expect val pageSize: Long
 
 @ExperimentalForeignApi
 internal expect fun mapMemory(
@@ -57,4 +67,16 @@ internal expect fun protectMemory(
 ): Boolean
 
 @ExperimentalForeignApi
-internal expect fun getLastError(): String
+internal expect fun getLastError(): String?
+
+@OptIn(ExperimentalForeignApi::class)
+internal inline fun <reified T> T?.checkLastError(): T {
+    return this ?: throw MemoryRegionException(getLastError() ?: "Unknown error")
+}
+
+@OptIn(ExperimentalForeignApi::class)
+internal inline fun checkLastError(condition: Boolean, errorCallback: () -> Unit = {}) {
+    if (condition) return
+    errorCallback()
+    throw MemoryRegionException(getLastError() ?: "Unknown error")
+}

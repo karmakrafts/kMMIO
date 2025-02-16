@@ -42,41 +42,11 @@ import platform.posix.ftruncate
 import platform.posix.mode_t
 import platform.posix.open
 
-value class SyncFlags private constructor(private val value: Int) {
-    companion object {
-        val SYNC: SyncFlags = SyncFlags(1)
-        val ASYNC: SyncFlags = SyncFlags(2)
-        val INVALIDATE: SyncFlags = SyncFlags(4)
-    }
-
-    operator fun plus(flags: SyncFlags): SyncFlags = SyncFlags(value or flags.value)
-    operator fun contains(flags: SyncFlags): Boolean = value and flags.value == flags.value
-}
-
-value class AccessFlags private constructor(private val value: Int) {
-    companion object {
-        val READ: AccessFlags = AccessFlags(1)
-        val WRITE: AccessFlags = AccessFlags(2)
-        val EXEC: AccessFlags = AccessFlags(4)
-    }
-
-    operator fun plus(flags: AccessFlags): AccessFlags = AccessFlags(value or flags.value)
-    operator fun contains(flags: AccessFlags): Boolean = value and flags.value == flags.value
-}
-
-value class MappingFlags private constructor(private val value: Int) {
-    companion object {
-        val ANON: MappingFlags = MappingFlags(1)
-        val PRIVATE: MappingFlags = MappingFlags(2)
-        val SHARED: MappingFlags = MappingFlags(4)
-    }
-
-    operator fun plus(flags: MappingFlags): MappingFlags = MappingFlags(value or flags.value)
-    operator fun contains(flags: MappingFlags): Boolean = value and flags.value == flags.value
-}
-
+/**
+ * A mapped block of memory which may be backed by a file.
+ */
 @OptIn(ExperimentalForeignApi::class, InternalMmanApi::class)
-class MemoryRegion(
+class MemoryRegion private constructor(
     private var handle: MemoryRegionHandle,
     size: Long,
     accessFlags: AccessFlags,
@@ -84,41 +54,71 @@ class MemoryRegion(
     @property:InternalMmanApi val fd: Int
 ) : AutoCloseable {
     companion object {
-        val lastError: String
-            get() = getLastError()
-
+        /**
+         * Create a new [RawSource] for the given file
+         * backed by a [io.karma.mman.MemoryRegion] to rea the file.
+         *
+         * @param path The path of the file to map into memory for reading.
+         * @param bufferSize The size of the buffer used internally by the [RawSource].
+         *  By default, this is set to the current system page size.
+         * @return A new [RawSource] backed by a [MemoryRegion] instance for reading.
+         * @throws MemoryRegionException If the new mapping could not be created.
+         */
         fun source(
-            path: Path, bufferSize: Int = PAGE_SIZE.toInt()
+            path: Path, bufferSize: Int = pageSize.toInt()
         ): RawSource = map(
             path, AccessFlags.READ
         ).asSource(bufferSize)
 
+        /**
+         * Create a new [RawSink] for the given file
+         * backed by a [io.karma.mman.MemoryRegion] to write the file.
+         *
+         * @param path The path of the file to map into memory for writing.
+         * @param bufferSize The size of the buffer used internally by the [RawSource].
+         *  By default, this is set to the current system page size.
+         * @return A new [RawSink] backed by a [MemoryRegion] instance for writing.
+         * @throws MemoryRegionException If the new mapping could not be created.
+         */
         fun sink(
-            path: Path, bufferSize: Int = PAGE_SIZE.toInt()
+            path: Path, bufferSize: Int = pageSize.toInt()
         ): RawSink = map(
             path, AccessFlags.READ + AccessFlags.WRITE
         ).asSink(bufferSize)
 
+        /**
+         * Create a new mapped memory region that is not backed by any file.
+         *
+         * @param accessFlags The access flags for the newly created memory region. See [AccessFlags].
+         * @param mappingFlags The mapping flags for the newly created memory region. See [MappingFlags].
+         * @param size The size of the newly created memory region in bytes.
+         * @return A new [MemoryRegion] instance with the given flags.
+         * @throws MemoryRegionException If the new mapping could not be created.
+         */
         fun map(
             size: Long, accessFlags: AccessFlags, mappingFlags: MappingFlags = MappingFlags.PRIVATE
         ): MemoryRegion {
             require(size >= 1) { "Memory region size must be larger or equal to 1 byte" }
-            val handle = requireNotNull(
-                mapMemory(
-                    -1, size, accessFlags, mappingFlags + MappingFlags.ANON
-                )
-            ) { "Could not create anonymous memory mapping" }
-            return MemoryRegion(
-                handle, size, accessFlags, (mappingFlags + MappingFlags.ANON), -1
-            )
+            val handle = mapMemory(-1, size, accessFlags, mappingFlags + MappingFlags.ANON).checkLastError()
+            return MemoryRegion(handle, size, accessFlags, (mappingFlags + MappingFlags.ANON), -1)
         }
 
+        /**
+         * Create a new mapped memory region that is backed by a file.
+         *
+         * @param path The path to the file to map into memory.
+         * @param accessFlags The access flags for the newly created memory region. See [AccessFlags].
+         * @param mappingFlags The mapping flags for the newly created memory region. See [MappingFlags].
+         * @param size The size of the newly created memory region in bytes.
+         * @return A new [MemoryRegion] instance with the given flags.
+         * @throws MemoryRegionException If the new mapping could not be created.
+         */
         @OptIn(UnsafeNumber::class)
         fun map(
             path: Path,
             accessFlags: AccessFlags,
             mappingFlags: MappingFlags = MappingFlags.SHARED,
-            size: Long = PAGE_SIZE,
+            size: Long = pageSize,
             override: Boolean = false
         ): MemoryRegion {
             require(size >= 1) { "Memory region size must be larger or equal to 1 byte" }
@@ -136,26 +136,17 @@ class MemoryRegion(
             if (isWrite) perms = perms or S_IWUSR or S_IWGRP or S_IWOTH
             if (AccessFlags.EXEC in accessFlags) perms = perms or S_IXUSR or S_IXGRP or S_IXOTH
 
-            val fd = open(
-                path.toString(), openFlags, perms.convert<mode_t>()
-            )
+            val fd = open(path.toString(), openFlags, perms.convert<mode_t>())
+            if (fd == -1) throw MemoryRegionException("Could not open file $path")
             if (isWrite && size != fileSize) {
-                if (ftruncate(
-                        fd, size.convert()
-                    ) != 0
-                ) {
+                checkLastError(ftruncate(fd, size.convert()) == 0) {
                     close(fd)
-                    throw IllegalStateException("Could not truncate file to initial mapping size: ${getLastError()}")
                 }
                 fileSize = size
             }
 
             val mappingSize = fileSize ?: size
-            val handle = requireNotNull(
-                mapMemory(
-                    fd, mappingSize, accessFlags, mappingFlags
-                )
-            ) { "Could not create file memory mapping for $path" }
+            val handle = mapMemory(fd, mappingSize, accessFlags, mappingFlags).checkLastError()
             return MemoryRegion(
                 handle, mappingSize, accessFlags, mappingFlags, fd
             )
@@ -164,86 +155,143 @@ class MemoryRegion(
 
     internal var isClosed: Boolean = false
 
+    /**
+     * The base address of this memory mapping.
+     */
     @ExperimentalForeignApi
     val address: COpaquePointer
         get() = handle.address
 
+    /**
+     * The unaligned size of this memory region in bytes.
+     */
     var size: Long = size
         internal set
 
+    /**
+     * The aligned size of this memory region in bytes.
+     */
     val alignedSize: Long
-        get() = (size + PAGE_SIZE - 1) and (PAGE_SIZE - 1).inv()
+        get() = (size + pageSize - 1) and (pageSize - 1).inv()
 
+    /**
+     * The access flags that were specified for this memory region.
+     * See [AccessFlags].
+     */
     var accessFlags: AccessFlags = accessFlags
         internal set
 
+    /**
+     * Synchronize this memory region, either flushing all changes
+     * to disk if the region is backed by a file or making all changes
+     * visible to other processes if the mapping is shared.
+     *
+     * @param flags The synchronization flags. See [SyncFlags].
+     * @return True if the mapping was synchronized successfully.
+     */
     fun sync(flags: SyncFlags): Boolean = syncMemory(
         handle, size.convert(), flags
     )
 
+    /**
+     * Lock this memory region.
+     * This will prevent the memory from being paged into the swap file.
+     *
+     * @return True if the mapping was locked successfully.
+     */
     fun lock(): Boolean = lockMemory(
         handle, size.convert()
     )
 
+    /**
+     * Unlock this memory region.
+     * This will allow the memory to be paged into the swap file
+     * when it was previously locked.
+     *
+     * @return True if the mapping was unlocked successfully.
+     */
     fun unlock(): Boolean = unlockMemory(
         handle, size.convert()
     )
 
+    /**
+     * Change the access flags of this memory region.
+     *
+     * @param flags The new access flags of this memory region. See [AccessFlags].
+     * @return True if the access flags were updated successfully.
+     */
     fun protect(flags: AccessFlags): Boolean {
-        if (!protectMemory(
-                handle, size.convert(), flags
-            )
-        ) return false
+        if (!protectMemory(handle, size.convert(), flags)) return false
         accessFlags = flags
         return true
     }
 
+    /**
+     * Resize this memory region to the given size.
+     *
+     * @param size The new size of this memory region in bytes.
+     * @return True if the mapping was updated successfully.
+     * @throws MemoryRegionException If the region could not be remapped.
+     */
     @OptIn(UnsafeNumber::class)
     fun resize(size: Long): Boolean {
         require(!isClosed) { "MemoryRegion has already been disposed" }
-        require(
-            unmapMemory(
-                handle, this.size.convert()
-            )
-        ) { "Could not unmap memory region for resizing: ${getLastError()}" }
-        val result = if (fd != -1) ftruncate(
-            fd, size.convert()
-        )
-        else 0
-        handle = requireNotNull(
-            mapMemory(
-                fd, size.convert(), accessFlags, mappingFlags
-            )
-        ) { "Could not remap memory region" }
+        checkLastError(unmapMemory(handle, this.size.convert()))
+        if (fd != -1 && ftruncate(fd, size.convert()) != 0) {
+            return false
+        }
+        handle = mapMemory(fd, size.convert(), accessFlags, mappingFlags).checkLastError()
         this.size = size
-        return result == 0
+        return true
     }
 
+    /**
+     * If the size of this region is smaller than the specified size,
+     * grow this region to fit the new size.
+     *
+     * @param size The required size of this region in bytes.
+     * @return True if this region was resized.
+     */
     fun growIfNeeded(size: Long): Boolean {
         if (size <= this.size) return false
         return resize(size)
     }
 
+    /**
+     * If the size of this region is larger than the specified size,
+     * shrink this region to fit the new size.
+     *
+     * @param size The required size of this region in bytes.
+     * @return True if this region was resized.
+     */
     fun shrinkIfNeeded(size: Long): Boolean {
         if (size >= this.size) return false
         return resize(size)
     }
 
-    fun asSink(bufferSize: Int = PAGE_SIZE.toInt()): RawSink = MemoryRegionSink(
+    /**
+     * Create a new [RawSink] from this memory region for writing data.
+     *
+     * @param bufferSize The size of the internal write buffer.
+     * @return A new [RawSink] instance for writing to this memory region.
+     */
+    fun asSink(bufferSize: Int = pageSize.toInt()): RawSink = MemoryRegionSink(
         this, bufferSize
     )
 
-    fun asSource(bufferSize: Int = PAGE_SIZE.toInt()): RawSource = MemoryRegionSource(
+    /**
+     * Creates a new [RawSource] from this memory region for reading data.
+     *
+     * @param bufferSize The size of the internal read buffer.
+     * @return A new [RawSource] instance for reading from this memory region.
+     */
+    fun asSource(bufferSize: Int = pageSize.toInt()): RawSource = MemoryRegionSource(
         this, bufferSize
     )
 
     override fun close() {
         require(!isClosed) { "Memory region has already been disposed" }
-        require(
-            unmapMemory(
-                handle, size.convert()
-            )
-        ) { "Could not unmap memory region: ${getLastError()}" }
+        checkLastError(unmapMemory(handle, size.convert()))
         if (fd != -1) close(fd)
         isClosed = true
     }
