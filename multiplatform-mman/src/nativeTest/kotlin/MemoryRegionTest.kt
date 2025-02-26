@@ -1,5 +1,5 @@
 /*
- * Copyright (C) Karma Krafts & associates 2025
+ * Copyright 2025 (C) Karma Krafts & associates
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -14,10 +14,7 @@
  * limitations under the License.
  */
 
-@file:OptIn(ExperimentalForeignApi::class)
-
 import io.karma.mman.AccessFlags
-import io.karma.mman.AccessFlags.Companion
 import io.karma.mman.MemoryRegion
 import io.karma.mman.pageSize
 import kotlinx.cinterop.ExperimentalForeignApi
@@ -30,10 +27,11 @@ import kotlin.test.assertEquals
 import kotlin.test.assertNotEquals
 import kotlin.test.assertTrue
 
+@OptIn(ExperimentalForeignApi::class)
 class MemoryRegionTest {
     @Test
     fun `Map and unmap private memory region`() {
-        MemoryRegion.map(4096, AccessFlags.READ + AccessFlags.WRITE).use {
+        MemoryRegion.Companion.map(4096, AccessFlags.Companion.READ + AccessFlags.Companion.WRITE).use {
             assertNotEquals(0, it.address.rawValue.toLong(), "Address cannot be 0")
         }
     }
@@ -41,7 +39,7 @@ class MemoryRegionTest {
     @Test
     fun `Map and unmap non-existing file to shared mapping`() {
         val path = Path("newfile.txt")
-        MemoryRegion.map(path, AccessFlags.READ + AccessFlags.WRITE).use {
+        MemoryRegion.Companion.map(path, AccessFlags.Companion.READ + AccessFlags.Companion.WRITE).use {
             assertNotEquals(0, it.address.rawValue.toLong(), "Address cannot be 0")
         }
         SystemFileSystem.delete(path) // Delete newly created file when test is done
@@ -49,50 +47,59 @@ class MemoryRegionTest {
 
     @Test
     fun `Map and unmap existing file to shared mapping`() {
-        MemoryRegion.map(Path("testfile.txt"), AccessFlags.READ).use {
+        MemoryRegion.Companion.map(kotlinx.io.files.Path("testfile.txt"), AccessFlags.Companion.READ).use {
             assertNotEquals(0, it.address.rawValue.toLong(), "Address cannot be 0")
         }
     }
 
     @Test
     fun `Change memory protection flags of private mapping`() {
-        MemoryRegion.map(pageSize shl 2, AccessFlags.READ + AccessFlags.WRITE).use {
+        MemoryRegion.Companion.map(pageSize shl 2, AccessFlags.Companion.READ + AccessFlags.Companion.WRITE).use {
             assertNotEquals(0, it.address.rawValue.toLong(), "Address cannot be 0")
-            assertEquals(AccessFlags.READ + AccessFlags.WRITE, it.accessFlags, "Access flags do not match")
+            assertEquals(
+                AccessFlags.Companion.READ + AccessFlags.Companion.WRITE, it.accessFlags, "Access flags do not match"
+            )
 
-            assertTrue(it.protect(AccessFlags.READ))
-
-            assertNotEquals(0, it.address.rawValue.toLong(), "Address cannot be 0")
-            assertEquals(AccessFlags.READ, it.accessFlags, "Access flags do not match")
-
-            assertTrue(it.protect(AccessFlags.READ + Companion.WRITE))
+            assertTrue(it.protect(AccessFlags.Companion.READ))
 
             assertNotEquals(0, it.address.rawValue.toLong(), "Address cannot be 0")
-            assertEquals(AccessFlags.READ + AccessFlags.WRITE, it.accessFlags, "Access flags do not match")
+            assertEquals(AccessFlags.Companion.READ, it.accessFlags, "Access flags do not match")
+
+            assertTrue(it.protect(AccessFlags.Companion.READ + AccessFlags.Companion.WRITE))
+
+            assertNotEquals(0, it.address.rawValue.toLong(), "Address cannot be 0")
+            assertEquals(
+                AccessFlags.Companion.READ + AccessFlags.Companion.WRITE, it.accessFlags, "Access flags do not match"
+            )
         }
     }
 
     @Test
     fun `Change memory protection flags of private file mapping`() {
-        MemoryRegion.map(Path("testfile.txt"), AccessFlags.READ + Companion.WRITE).use {
+        MemoryRegion.Companion.map(
+            kotlinx.io.files.Path("testfile.txt"), AccessFlags.Companion.READ + AccessFlags.Companion.WRITE).use {
             assertNotEquals(0, it.address.rawValue.toLong(), "Address cannot be 0")
-            assertEquals(AccessFlags.READ + AccessFlags.WRITE, it.accessFlags, "Access flags do not match")
+            assertEquals(
+                AccessFlags.Companion.READ + AccessFlags.Companion.WRITE, it.accessFlags, "Access flags do not match"
+            )
 
-            assertTrue(it.protect(AccessFlags.READ))
-
-            assertNotEquals(0, it.address.rawValue.toLong(), "Address cannot be 0")
-            assertEquals(AccessFlags.READ, it.accessFlags, "Access flags do not match")
-
-            assertTrue(it.protect(AccessFlags.READ + Companion.WRITE))
+            assertTrue(it.protect(AccessFlags.Companion.READ))
 
             assertNotEquals(0, it.address.rawValue.toLong(), "Address cannot be 0")
-            assertEquals(AccessFlags.READ + AccessFlags.WRITE, it.accessFlags, "Access flags do not match")
+            assertEquals(AccessFlags.Companion.READ, it.accessFlags, "Access flags do not match")
+
+            assertTrue(it.protect(AccessFlags.Companion.READ + AccessFlags.Companion.WRITE))
+
+            assertNotEquals(0, it.address.rawValue.toLong(), "Address cannot be 0")
+            assertEquals(
+                AccessFlags.Companion.READ + AccessFlags.Companion.WRITE, it.accessFlags, "Access flags do not match"
+            )
         }
     }
 
     @Test
     fun `Resize private mapping`() {
-        MemoryRegion.map(pageSize shl 2, AccessFlags.READ + AccessFlags.WRITE).use {
+        MemoryRegion.Companion.map(pageSize shl 2, AccessFlags.Companion.READ + AccessFlags.Companion.WRITE).use {
             assertEquals(pageSize shl 2, it.size)
             assertNotEquals(0, it.address.rawValue.toLong(), "Address cannot be 0")
 
@@ -110,8 +117,8 @@ class MemoryRegionTest {
 
     @Test
     fun `Resize shared file mapping`() {
-        val path = Path("newfile.txt")
-        MemoryRegion.map(path, AccessFlags.READ + AccessFlags.WRITE, size = pageSize shl 2).use {
+        val path = kotlinx.io.files.Path("newfile.txt")
+        MemoryRegion.Companion.map(path, AccessFlags.Companion.READ + AccessFlags.Companion.WRITE, size = pageSize shl 2).use {
             assertEquals(pageSize shl 2, it.size)
             assertNotEquals(0, it.address.rawValue.toLong(), "Address cannot be 0")
 
@@ -130,9 +137,9 @@ class MemoryRegionTest {
 
     @Test
     fun `Copy data to shared file mapping`() {
-        val path = Path("newfile.txt")
-        val sourcePath = Path("testfile.txt")
-        MemoryRegion.map(path, AccessFlags.READ + AccessFlags.WRITE).use {
+        val path = kotlinx.io.files.Path("newfile.txt")
+        val sourcePath = kotlinx.io.files.Path("testfile.txt")
+        MemoryRegion.Companion.map(path, AccessFlags.Companion.READ + AccessFlags.Companion.WRITE).use {
             assertNotEquals(0, it.address.rawValue.toLong(), "Address cannot be 0")
             it.growIfNeeded(SystemFileSystem.metadataOrNull(sourcePath)?.size ?: pageSize)
             it.asSink().apply {
@@ -152,9 +159,9 @@ class MemoryRegionTest {
 
     @Test
     fun `Copy data from shared file mapping`() {
-        val path = Path("testfile.txt")
-        val destPath = Path("newfile.txt")
-        MemoryRegion.map(path, AccessFlags.READ).use {
+        val path = kotlinx.io.files.Path("testfile.txt")
+        val destPath = kotlinx.io.files.Path("newfile.txt")
+        MemoryRegion.Companion.map(path, AccessFlags.Companion.READ).use {
             assertNotEquals(0, it.address.rawValue.toLong(), "Address cannot be 0")
             SystemFileSystem.sink(destPath).buffered().use { sink ->
                 sink.transferFrom(it.asSource())

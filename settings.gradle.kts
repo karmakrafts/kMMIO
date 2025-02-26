@@ -32,4 +32,3 @@ dependencyResolutionManagement {
 }
 
 include("multiplatform-mman")
-include("multiplatform-mman-tests")
