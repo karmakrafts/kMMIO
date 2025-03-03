@@ -14,25 +14,12 @@
  * limitations under the License.
  */
 
-rootProject.name = "kmmio"
+package io.karma.kmmio
 
-pluginManagement {
-    repositories {
-        google()
-        mavenCentral()
-        gradlePluginPortal()
-    }
-}
-
-dependencyResolutionManagement {
-    @Suppress("UnstableApiUsage") repositories {
-        google()
-        mavenCentral()
-    }
-}
-
-plugins {
-    id("org.gradle.toolchains.foojay-resolver") version "0.9.0"
-}
-
-include("kmmio")
+/**
+ * Any type of error caused by the platform implementation
+ * of a [MemoryRegion] instance.
+ *
+ * @param message The error message.
+ */
+class MemoryRegionException(message: String?) : RuntimeException(message)

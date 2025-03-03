@@ -1,7 +1,9 @@
 [versions]
-multiplatformMman = "1.5.3"
+java = "11"
+
+kmmio = "1.6.0"
 kotlin = "2.1.10"
-kotlinxIo = "0.6.0" # https://mvnrepository.com/artifact/org.jetbrains.kotlinx/kotlinx-io-core
+kotlinxIo = "0.7.0" # https://mvnrepository.com/artifact/org.jetbrains.kotlinx/kotlinx-io-core
 dokka = "2.0.0" # https://github.com/Kotlin/dokka/releases
 
 [libraries]

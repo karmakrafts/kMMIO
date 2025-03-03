@@ -1,8 +1,9 @@
-# Multiplatform mman
-[![](https://git.karmakrafts.dev/kk/multiplatform-mman/badges/master/pipeline.svg)](https://git.karmakrafts.dev/kk/multiplatform-mman/-/pipelines)
-[![](https://img.shields.io/maven-metadata/v?metadataUrl=https%3A%2F%2Ffiles.karmakrafts.dev%2Fmaven%2Fio%2Fkarma%2Fmman%2Fmultiplatform-mman%2Fmaven-metadata.xml)](https://git.karmakrafts.dev/kk/multiplatform-mman/-/packages)
+# kMMIO
+[![](https://git.karmakrafts.dev/kk/kmmio/badges/master/pipeline.svg)](https://git.karmakrafts.dev/kk/kmmio/-/pipelines)
+[![](https://img.shields.io/maven-metadata/v?metadataUrl=https%3A%2F%2Ffiles.karmakrafts.dev%2Fmaven%2Fio%2Fkarma%2Fkmmio%2Fkmmio%2Fmaven-metadata.xml)](https://git.karmakrafts.dev/kk/kmmio/-/packages)
 
-Lightweight wrapper around mman for Kotlin/Multiplatform to allow for easy MMIO.
+Common MMIO API for Kotlin Multiplatform based on [kotlinx.io](https://github.com/Kotlin/kotlinx-io).  
+This library was developed as part of the [Kleaver](https://git.karmakrafts.dev/karmastudios/kleaver) project.
 
 ### Platform support
 
@@ -17,6 +18,8 @@ Lightweight wrapper around mman for Kotlin/Multiplatform to allow for easy MMIO.
 * Android Native arm64
 * Android Native arm32
 
+Support for the JVM is planned.
+
 ### How to use it
 
 First, add a dependency on the library:
@@ -30,7 +33,7 @@ kotlin {
     sourceSets {
         commonMain {
             dependencies {
-                implementation("io.karma.mman:multiplatform-mman:<version>")
+                implementation("io.karma.kmmio:kmmio:<version>")
             }
         }
     }
@@ -40,9 +43,9 @@ kotlin {
 Afterwards, you can access all APIs from any native source set:
 
 ```kotlin
-import io.karma.mman.AccessFlags
-import io.karma.mman.AccessFlags.Companion
-import io.karma.mman.MemoryRegion
+import io.karma.kmmio.AccessFlags
+import io.karma.kmmio.AccessFlags.Companion
+import io.karma.kmmio.MemoryRegion
 
 fun main() {
     MemoryRegion.map(path, AccessFlags.READ + AccessFlags.WRITE).use {

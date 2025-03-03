@@ -1,5 +1,5 @@
 /*
- * Copyright (C) Karma Krafts & associates 2025
+ * Copyright 2025 (C) Karma Krafts & associates
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -19,23 +19,20 @@ plugins {
     alias(libs.plugins.dokka) apply false
 }
 
-group = "io.karma.mman"
-version = CI.getDefaultVersion(libs.versions.multiplatformMman)
+group = "io.karma.kmmio"
+version = CI.getDefaultVersion(libs.versions.kmmio)
 
 allprojects {
-    group = rootProject.group
-    version = rootProject.version
-
     repositories {
         mavenCentral()
         google()
-        maven("https://files.karmakrafts.dev/maven")
+        karmakrafts()
     }
+}
 
-    if (CI.isCI) {
-        dependencyLocking {
-            lockAllConfigurations()
-        }
-        val dependenciesForAll by tasks.registering(DependencyReportTask::class) {}
-    }
+subprojects {
+    group = rootProject.group
+    version = rootProject.version
+    configureJava(rootProject.libs.versions.java)
+    with(CI) { configure() }
 }

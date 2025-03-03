@@ -141,6 +141,6 @@ publish:documentation:
   before_script:
     - export JAVA_HOME=/home/sdks/zulu-17
   script:
-    - ./gradlew -DpublishDocs.root=/var/www/docs/multiplatform-mman publishDocs
+    - ./gradlew -DpublishDocs.root=/var/www/docs/kmmio publishDocs
   tags:
     - linux

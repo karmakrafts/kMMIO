@@ -16,22 +16,28 @@
 
 import com.google.gson.Gson
 import com.google.gson.JsonObject
+import org.gradle.api.JavaVersion
 import org.gradle.api.Project
 import org.gradle.api.Task
 import org.gradle.api.artifacts.dsl.RepositoryHandler
 import org.gradle.api.credentials.HttpHeaderCredentials
 import org.gradle.api.file.DirectoryProperty
+import org.gradle.api.plugins.JavaPluginExtension
 import org.gradle.api.provider.Provider
 import org.gradle.api.tasks.Copy
 import org.gradle.api.tasks.Exec
 import org.gradle.api.tasks.TaskContainer
+import org.gradle.api.tasks.diagnostics.DependencyReportTask
 import org.gradle.authentication.http.HttpHeaderAuthentication
 import org.gradle.internal.extensions.stdlib.capitalized
+import org.gradle.jvm.toolchain.JavaLanguageVersion
 import org.gradle.kotlin.dsl.create
 import org.gradle.kotlin.dsl.credentials
 import org.gradle.kotlin.dsl.get
+import org.gradle.kotlin.dsl.getByType
 import org.gradle.kotlin.dsl.maven
 import org.gradle.kotlin.dsl.maybeCreate
+import org.gradle.kotlin.dsl.provideDelegate
 import java.io.File
 import java.net.HttpURLConnection
 import java.net.URI
@@ -45,11 +51,6 @@ import kotlin.io.path.deleteIfExists
 import kotlin.io.path.div
 import kotlin.io.path.exists
 import kotlin.io.path.notExists
-
-/**
- * @author Alexander Hinze
- * @since 12/12/2024
- */
 
 private val gson: Gson = Gson()
 
@@ -81,11 +82,87 @@ fun TaskContainer.ensureBuildDirectory(): Task {
     }
 }
 
+@Suppress("UnstableApiUsage")
+fun Int.toJavaVersion(): JavaVersion = when (this) {
+    1 -> JavaVersion.VERSION_1_1
+    2 -> JavaVersion.VERSION_1_2
+    3 -> JavaVersion.VERSION_1_3
+    4 -> JavaVersion.VERSION_1_4
+    5 -> JavaVersion.VERSION_1_5
+    6 -> JavaVersion.VERSION_1_6
+    7 -> JavaVersion.VERSION_1_7
+    8 -> JavaVersion.VERSION_1_8
+    9 -> JavaVersion.VERSION_1_9
+    10 -> JavaVersion.VERSION_1_10
+    11 -> JavaVersion.VERSION_11
+    12 -> JavaVersion.VERSION_12
+    13 -> JavaVersion.VERSION_13
+    14 -> JavaVersion.VERSION_14
+    15 -> JavaVersion.VERSION_15
+    16 -> JavaVersion.VERSION_16
+    17 -> JavaVersion.VERSION_17
+    18 -> JavaVersion.VERSION_18
+    19 -> JavaVersion.VERSION_19
+    20 -> JavaVersion.VERSION_20
+    21 -> JavaVersion.VERSION_21
+    22 -> JavaVersion.VERSION_22
+    23 -> JavaVersion.VERSION_23
+    24 -> JavaVersion.VERSION_24
+    25 -> JavaVersion.VERSION_25
+    26 -> JavaVersion.VERSION_26
+    27 -> JavaVersion.VERSION_27
+    else -> throw IllegalArgumentException("Unrecognized Java version: $this")
+}
+
+fun Project.configureJava(version: Int) {
+    project.pluginManager.apply {
+        logger.lifecycle("Setting up project using Java $version")
+        withPlugin("java") {
+            extensions.getByType(JavaPluginExtension::class).apply {
+                toolchain {
+                    languageVersion.set(JavaLanguageVersion.of(version))
+                }
+                val javaVersion = version.toJavaVersion()
+                sourceCompatibility = javaVersion
+                targetCompatibility = javaVersion
+            }
+        }
+        withPlugin("org.jetbrains.kotlin.jvm") {
+            logger.lifecycle("Found Kotlin JVM plugin, adjusting Java version")
+            extensions.getByName("kotlin").apply {
+                this::class.java.getMethod("jvmToolchain", Int::class.java).invoke(this, version)
+            }
+        }
+        withPlugin("org.jetbrains.kotlin.multiplatform") {
+            logger.lifecycle("Found Kotlin Multiplatform plugin, adjusting Java version")
+            extensions.getByName("kotlin").apply {
+                this::class.java.getMethod("jvmToolchain", Int::class.java).invoke(this, version)
+            }
+        }
+    }
+}
+
+fun Project.configureJava(provider: Provider<String>) {
+    configureJava(provider.get().toInt())
+}
+
+fun RepositoryHandler.karmakrafts() {
+    maven("https://files.karmakrafts.dev/maven")
+}
+
 // Static CI helpers
 
 object CI {
     val isCI: Boolean
         get() = System.getenv("CI_PROJECT_ID") != null
+
+    fun Project.configure() {
+        if (!isCI) return
+        dependencyLocking {
+            lockAllConfigurations()
+        }
+        tasks.register("dependenciesForAll", DependencyReportTask::class.java)
+    }
 
     fun getDefaultVersion(baseVersion: Provider<String>): String {
         return System.getenv("CI_COMMIT_TAG")?.let { baseVersion.get() } ?: "${baseVersion.get()}.${

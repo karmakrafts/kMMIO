@@ -14,25 +14,12 @@
  * limitations under the License.
  */
 
-rootProject.name = "kmmio"
+package io.karma.kmmio
 
-pluginManagement {
-    repositories {
-        google()
-        mavenCentral()
-        gradlePluginPortal()
-    }
-}
-
-dependencyResolutionManagement {
-    @Suppress("UnstableApiUsage") repositories {
-        google()
-        mavenCentral()
-    }
-}
-
-plugins {
-    id("org.gradle.toolchains.foojay-resolver") version "0.9.0"
-}
-
-include("kmmio")
+/**
+ * Denotes a declaration which is internal to Multiplatform mman
+ * but may be used by opting in using [OptIn].
+ */
+@RequiresOptIn(message = "This API is internal to Mman and shouldn't be used directly")
+@Retention(AnnotationRetention.BINARY)
+annotation class InternalMmanApi
