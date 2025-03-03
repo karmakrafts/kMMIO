@@ -313,7 +313,7 @@ class GitLabPackageArtifact(
                 val url = "$packageUrl/$fileName"
                 println("Downloading $url..")
                 localPath.createDirectories()
-                URL(url).openConnection().apply {
+                URI.create(url).toURL().openConnection().apply {
                     setDefaultUserAgent()
                     connect()
                     inputStream.use { Files.copy(it, localPath, StandardCopyOption.REPLACE_EXISTING) }
