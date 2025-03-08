@@ -5,11 +5,13 @@ kmmio = "1.6.0"
 kotlin = "2.1.10"
 kotlinxIo = "0.7.0" # https://mvnrepository.com/artifact/org.jetbrains.kotlinx/kotlinx-io-core
 dokka = "2.0.0" # https://github.com/Kotlin/dokka/releases
+karmaConventions = "1.0.0.0-SNAPSHOT"
 
 [libraries]
 kotlinx-io-bytestring = { module = "org.jetbrains.kotlinx:kotlinx-io-bytestring", version.ref = "kotlinxIo" }
 kotlinx-io-core = { module = "org.jetbrains.kotlinx:kotlinx-io-core", version.ref = "kotlinxIo" }
 
 [plugins]
+karmaConventions = { id = "io.karma.conventions.karma-conventions", version.ref = "karmaConventions" }
 kotlin-multiplatform = { id = "org.jetbrains.kotlin.multiplatform", version.ref = "kotlin" }
 dokka = { id = "org.jetbrains.dokka", version.ref = "dokka" }

@@ -14,6 +14,9 @@
  * limitations under the License.
  */
 
+import io.karma.conventions.GitLabCI
+import java.time.ZonedDateTime
+
 plugins {
     alias(libs.plugins.kotlin.multiplatform)
     alias(libs.plugins.dokka)
@@ -60,18 +63,15 @@ kotlin {
                 implementation(kotlin("test"))
             }
         }
-        configureEach {
-            if ("Main" !in name) return@configureEach
-            withSourcesJar(true)
-        }
     }
+    withSourcesJar(true)
 }
 
 dokka {
     moduleName = project.name
     pluginsConfiguration {
         html {
-            footerMessage = "(c) 2025 Karma Krafts & associates"
+            footerMessage = "(c) ${ZonedDateTime.now().year} Karma Krafts & associates"
         }
     }
 }
@@ -95,7 +95,7 @@ tasks {
 
 publishing {
     repositories {
-        with(CI) { authenticatedPackageRegistry() }
+        with(GitLabCI) { authenticatedPackageRegistry() }
     }
     publications {
         withType<MavenPublication> {

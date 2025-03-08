@@ -14,25 +14,21 @@
  * limitations under the License.
  */
 
+import io.karma.conventions.GitLabCI
+import io.karma.conventions.configureJava
+
 plugins {
     alias(libs.plugins.kotlin.multiplatform) apply false
     alias(libs.plugins.dokka) apply false
+    alias(libs.plugins.karmaConventions)
 }
 
 group = "io.karma.kmmio"
-version = CI.getDefaultVersion(libs.versions.kmmio)
-
-allprojects {
-    repositories {
-        mavenCentral()
-        google()
-        karmakrafts()
-    }
-}
+version = GitLabCI.getDefaultVersion(libs.versions.kmmio)
 
 subprojects {
     group = rootProject.group
     version = rootProject.version
     configureJava(rootProject.libs.versions.java)
-    with(CI) { configure() }
+    with(GitLabCI) { configureDefaults() }
 }
