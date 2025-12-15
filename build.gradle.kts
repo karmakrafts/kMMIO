@@ -1,5 +1,5 @@
 /*
- * Copyright 2025 (C) Karma Krafts & associates
+ * Copyright 2025 Karma Krafts
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -14,25 +14,48 @@
  * limitations under the License.
  */
 
+import dev.karmakrafts.conventions.GitLabCI
+import dev.karmakrafts.conventions.apache2License
+import dev.karmakrafts.conventions.authenticatedSonatype
+import dev.karmakrafts.conventions.defaultDependencyLocking
+import dev.karmakrafts.conventions.setRepository
+import dev.karmakrafts.conventions.signPublications
+import java.time.Duration
+
 plugins {
-    alias(libs.plugins.kotlin.multiplatform) apply false
     alias(libs.plugins.dokka) apply false
+    alias(libs.plugins.kotlin.multiplatform) apply false
+    alias(libs.plugins.android.library) apply false
+    alias(libs.plugins.karmaConventions)
+    signing
+    `maven-publish`
+    alias(libs.plugins.gradleNexus)
 }
 
-group = "io.karma.kmmio"
-version = CI.getDefaultVersion(libs.versions.kmmio)
+group = "dev.karmakrafts.kmmio"
+version = GitLabCI.getDefaultVersion(libs.versions.kmmio)
 
-allprojects {
-    repositories {
-        mavenCentral()
-        google()
-        karmakrafts()
+subprojects {
+    apply<MavenPublishPlugin>()
+    apply<SigningPlugin>()
+
+    group = rootProject.group
+    version = rootProject.version
+    if (GitLabCI.isCI) defaultDependencyLocking()
+
+    publishing {
+        apache2License()
+        setRepository("github.com", "karmakrafts/kMMIO")
+        with(GitLabCI) { karmaKraftsDefaults() }
+    }
+
+    signing {
+        signPublications()
     }
 }
 
-subprojects {
-    group = rootProject.group
-    version = rootProject.version
-    configureJava(rootProject.libs.versions.java)
-    with(CI) { configure() }
+nexusPublishing {
+    authenticatedSonatype()
+    connectTimeout = Duration.ofSeconds(30)
+    clientTimeout = Duration.ofMinutes(45)
 }

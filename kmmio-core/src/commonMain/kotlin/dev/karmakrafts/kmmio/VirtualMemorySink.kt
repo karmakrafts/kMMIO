@@ -14,32 +14,25 @@
  * limitations under the License.
  */
 
-enableFeaturePreview("TYPESAFE_PROJECT_ACCESSORS")
+package dev.karmakrafts.kmmio
 
-rootProject.name = "kmmio"
+import kotlinx.io.Buffer
+import kotlinx.io.RawSink
 
-pluginManagement {
-    repositories {
-        google()
-        mavenCentral()
-        mavenLocal()
-        gradlePluginPortal()
-        maven("https://central.sonatype.com/repository/maven-snapshots")
+private class VirtualMemorySink(
+    private val memory: VirtualMemory
+) : RawSink {
+    override fun close() {
+        TODO("Not yet implemented")
+    }
+
+    override fun flush() {
+        TODO("Not yet implemented")
+    }
+
+    override fun write(source: Buffer, byteCount: Long) {
+        TODO("Not yet implemented")
     }
 }
 
-@Suppress("UnstableApiUsage")
-dependencyResolutionManagement {
-    repositories {
-        google()
-        mavenCentral()
-        mavenLocal()
-        maven("https://central.sonatype.com/repository/maven-snapshots")
-    }
-}
-
-plugins {
-    id("org.gradle.toolchains.foojay-resolver") version "1.0.0"
-}
-
-include("kmmio-core")
+fun VirtualMemory.sink(size: Long = this.size, offset: Long = 0L): RawSink = VirtualMemorySink(this)
