@@ -23,7 +23,7 @@ import kotlin.jvm.JvmInline
  * The type of mapping created for a [VirtualMemory].
  */
 @JvmInline
-value class MappingFlags private constructor(private val value: UByte) {
+value class MappingFlags private constructor(internal val value: UByte) {
     companion object {
         /**
          * A mapping which is not backed by any file.

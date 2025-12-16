@@ -16,23 +16,18 @@
 
 package dev.karmakrafts.kmmio
 
-import kotlinx.io.Buffer
-import kotlinx.io.RawSink
+import kotlinx.io.files.Path
 
-private class VirtualMemorySink(
-    private val memory: VirtualMemory, private val size: Long, private val offset: Long
-) : RawSink {
-    override fun close() {
-        TODO("Not yet implemented")
+actual fun VirtualMemory( // @formatter:off
+    size: Long,
+    path: Path?,
+    accessFlags: AccessFlags,
+    mappingFlags: MappingFlags
+): VirtualMemory { // @formatter:on
+    return if (isWindows) {
+        WindowsVirtualMemory(size, path, accessFlags, mappingFlags)
     }
-
-    override fun flush() {
-        TODO("Not yet implemented")
-    }
-
-    override fun write(source: Buffer, byteCount: Long) {
-        TODO("Not yet implemented")
+    else {
+        PosixVirtualMemory(size, path, accessFlags, mappingFlags)
     }
 }
-
-fun VirtualMemory.sink(size: Long = this.size, offset: Long = 0L): RawSink = VirtualMemorySink(this, size, offset)

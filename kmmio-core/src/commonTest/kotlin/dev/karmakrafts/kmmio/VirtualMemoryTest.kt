@@ -16,23 +16,20 @@
 
 package dev.karmakrafts.kmmio
 
-import kotlinx.io.Buffer
-import kotlinx.io.RawSink
+import kotlinx.io.files.Path
+import kotlin.test.Test
 
-private class VirtualMemorySink(
-    private val memory: VirtualMemory, private val size: Long, private val offset: Long
-) : RawSink {
-    override fun close() {
-        TODO("Not yet implemented")
+class VirtualMemoryTest {
+    @Test
+    fun `Map and unmap anon memory`() {
+        val memory = VirtualMemory(1024 * 16)
+        memory.close()
     }
 
-    override fun flush() {
-        TODO("Not yet implemented")
-    }
-
-    override fun write(source: Buffer, byteCount: Long) {
-        TODO("Not yet implemented")
+    @Test
+    fun `Map and unmap shared memory`() {
+        val memory = VirtualMemory(1024 * 16, Path("testfile.bin"))
+        memory.sync(SyncFlags.SYNC)
+        memory.close()
     }
 }
-
-fun VirtualMemory.sink(size: Long = this.size, offset: Long = 0L): RawSink = VirtualMemorySink(this, size, offset)

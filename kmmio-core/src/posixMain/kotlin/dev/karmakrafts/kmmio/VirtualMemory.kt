@@ -18,14 +18,19 @@ package dev.karmakrafts.kmmio
 
 import kotlinx.io.files.Path
 
-private class VirtualMemoryImpl : VirtualMemory {
-    override val path: Path?
-        get() = TODO("Not yet implemented")
-    override val size: Long
-        get() = TODO("Not yet implemented")
-    override val accessFlags: AccessFlags
-        get() = TODO("Not yet implemented")
+private class VirtualMemoryImpl(
+    initialSize: Long,
+    override val path: Path?,
+    initialAccessFlags: AccessFlags,
     override val mappingFlags: MappingFlags
+) : VirtualMemory {
+    private var _size: Long = initialSize
+    override val size: Long get() = _size
+
+    private var _accessFlags: AccessFlags = initialAccessFlags
+    override val accessFlags: AccessFlags = initialAccessFlags
+
+    override val fileDescriptor: Int
         get() = TODO("Not yet implemented")
 
     override fun sync(flags: SyncFlags): Boolean {
@@ -77,6 +82,9 @@ private class VirtualMemoryImpl : VirtualMemory {
     }
 }
 
-actual fun VirtualMemory(
-    size: Long, path: Path?, accessFlags: AccessFlags, mappingFlags: MappingFlags
-): VirtualMemory = VirtualMemoryImpl()
+actual fun VirtualMemory( // @formatter:off
+    size: Long,
+    path: Path?,
+    accessFlags: AccessFlags,
+    mappingFlags: MappingFlags
+): VirtualMemory = VirtualMemoryImpl(size, path, accessFlags, mappingFlags) // @formatter:on

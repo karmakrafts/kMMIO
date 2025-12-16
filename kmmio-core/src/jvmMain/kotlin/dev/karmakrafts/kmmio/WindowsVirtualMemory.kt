@@ -17,16 +17,44 @@
 package dev.karmakrafts.kmmio
 
 import kotlinx.io.files.Path
+import java.lang.foreign.Linker
+import java.lang.foreign.MemorySegment
+import java.lang.foreign.SymbolLookup
 
-private class VirtualMemoryImpl : VirtualMemory {
-    override val path: Path?
-        get() = TODO("Not yet implemented")
-    override val size: Long
-        get() = TODO("Not yet implemented")
-    override val accessFlags: AccessFlags
-        get() = TODO("Not yet implemented")
+@Suppress("Since15") // We compile against Panama as a preview feature to be compatible with Java
+internal class WindowsVirtualMemory(
+    initialSize: Long,
+    override val path: Path?,
+    initialAccessFlags: AccessFlags,
     override val mappingFlags: MappingFlags
+) : VirtualMemory {
+    companion object {
+        private val symbolLookup: SymbolLookup = Linker.nativeLinker().defaultLookup()
+        private val CreateFileMappingW: MemorySegment = symbolLookup.find("CreateFileMappingW").orElseThrow()
+        private val MapViewOfFileEx: MemorySegment = symbolLookup.find("MapViewOfFileEx").orElseThrow()
+        private val UnmapViewOfFile: MemorySegment = symbolLookup.find("UnmapViewOfFile").orElseThrow()
+        private val FlushViewOfFile: MemorySegment = symbolLookup.find("FlushViewOfFile").orElseThrow()
+        private val VirtualProtect: MemorySegment = symbolLookup.find("VirtualProtect").orElseThrow()
+        private val VirtualLock: MemorySegment = symbolLookup.find("VirtualLock").orElseThrow()
+        private val VirtualUnlock: MemorySegment = symbolLookup.find("VirtualUnlock").orElseThrow()
+        private val CloseHandle: MemorySegment = symbolLookup.find("CloseHandle").orElseThrow()
+        private val InitializeSecurityDescriptor: MemorySegment =
+            symbolLookup.find("InitializeSecurityDescriptor").orElseThrow()
+        private val _get_osfhandle: MemorySegment = symbolLookup.find("_get_osfhandle").orElseThrow()
+    }
+
+    private var _size: Long = initialSize
+    override val size: Long get() = _size
+
+    private var _accessFlags: AccessFlags = initialAccessFlags
+    override val accessFlags: AccessFlags = initialAccessFlags
+
+    override val fileDescriptor: Int
         get() = TODO("Not yet implemented")
+
+    override fun zero() {
+        TODO("Not yet implemented")
+    }
 
     override fun sync(flags: SyncFlags): Boolean {
         TODO("Not yet implemented")
@@ -76,7 +104,3 @@ private class VirtualMemoryImpl : VirtualMemory {
         TODO("Not yet implemented")
     }
 }
-
-actual fun VirtualMemory(
-    size: Long, path: Path?, accessFlags: AccessFlags, mappingFlags: MappingFlags
-): VirtualMemory = VirtualMemoryImpl()

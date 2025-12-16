@@ -16,8 +16,10 @@
 
 @file:OptIn(ExperimentalKotlinGradlePluginApi::class)
 
+import dev.karmakrafts.conventions.configureJava
 import dev.karmakrafts.conventions.setProjectInfo
 import org.jetbrains.kotlin.gradle.ExperimentalKotlinGradlePluginApi
+import java.time.ZonedDateTime
 
 plugins {
     alias(libs.plugins.kotlin.multiplatform)
@@ -26,6 +28,8 @@ plugins {
     signing
     `maven-publish`
 }
+
+configureJava(libs.versions.java)
 
 kotlin {
     jvm()
@@ -53,10 +57,6 @@ kotlin {
     tvosSimulatorArm64()
     applyDefaultHierarchyTemplate {
         common {
-            group("jvmAndAndroid") {
-                withJvm()
-                withAndroidTarget()
-            }
             group("posix") { // All non-Windows OSs can use mmap no problem
                 withAndroidNative()
                 withLinux()
@@ -90,6 +90,15 @@ android {
     }
 }
 
+dokka {
+    moduleName = project.name
+    pluginsConfiguration {
+        html {
+            footerMessage = "&copy; ${ZonedDateTime.now().year} Karma Krafts"
+        }
+    }
+}
+
 val dokkaJar by tasks.registering(Jar::class) {
     group = "dokka"
     from(tasks.dokkaGeneratePublicationHtml.flatMap { it.outputDirectory })
@@ -97,6 +106,12 @@ val dokkaJar by tasks.registering(Jar::class) {
 }
 
 tasks {
+    withType<JavaCompile> {
+        options.compilerArgs.add("--enable-preview")
+    }
+    withType<JavaExec> {
+        jvmArgs("--enable-preview")
+    }
     System.getProperty("publishDocs.root")?.let { docsDir ->
         register("publishDocs", Copy::class) {
             dependsOn(dokkaJar)

@@ -16,23 +16,16 @@
 
 package dev.karmakrafts.kmmio
 
-import kotlinx.io.Buffer
-import kotlinx.io.RawSink
+import java.lang.foreign.MemorySegment
 
-private class VirtualMemorySink(
-    private val memory: VirtualMemory, private val size: Long, private val offset: Long
-) : RawSink {
-    override fun close() {
-        TODO("Not yet implemented")
-    }
-
-    override fun flush() {
-        TODO("Not yet implemented")
-    }
-
-    override fun write(source: Buffer, byteCount: Long) {
-        TODO("Not yet implemented")
-    }
+interface JvmVirtualMemory : VirtualMemory {
+    @Suppress("Since15") // We compile against Panama as a preview feature to be compatible with Java 21
+    val address: MemorySegment
 }
 
-fun VirtualMemory.sink(size: Long = this.size, offset: Long = 0L): RawSink = VirtualMemorySink(this, size, offset)
+@Suppress("Since15") // We compile against Panama as a preview feature to be compatible with Java 21
+inline val VirtualMemory.address: MemorySegment
+    get() {
+        check(this is JvmVirtualMemory) { "VirtualMemory is not a JvmVirtualMemory instance" }
+        return address
+    }

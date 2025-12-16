@@ -23,7 +23,7 @@ import kotlin.jvm.JvmInline
  * order to read, write or execute mapped memory blocks.
  */
 @JvmInline
-value class AccessFlags private constructor(private val value: UByte) {
+value class AccessFlags private constructor(internal val value: UByte) {
     companion object {
         /**
          * The mapped memory may be read by the process that owns the mapping.

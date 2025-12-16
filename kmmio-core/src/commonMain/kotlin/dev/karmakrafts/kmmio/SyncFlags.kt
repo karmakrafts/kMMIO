@@ -23,24 +23,24 @@ import kotlin.jvm.JvmInline
  * calling [VirtualMemory.sync].
  */
 @JvmInline
-value class SyncFlags private constructor(private val value: Int) {
+value class SyncFlags private constructor(internal val value: UByte) {
     companion object {
-        /**
-         * Schedules an update and waits for its completion.
-         */
-        val SYNC: SyncFlags = SyncFlags(1)
-
         /**
          * Schedules an update and immediately returns,
          * not waiting for the update to complete.
          */
-        val ASYNC: SyncFlags = SyncFlags(2)
+        val ASYNC: SyncFlags = SyncFlags(0x01U)
 
         /**
          * Invalidate other mappings of the underlying file
          * to update the newly written contents.
          */
-        val INVALIDATE: SyncFlags = SyncFlags(4)
+        val INVALIDATE: SyncFlags = SyncFlags(0x02U)
+
+        /**
+         * Schedules an update and waits for its completion.
+         */
+        val SYNC: SyncFlags = SyncFlags(0x04U)
     }
 
     operator fun plus(flags: SyncFlags): SyncFlags = SyncFlags(value or flags.value)

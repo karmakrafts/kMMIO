@@ -19,28 +19,35 @@ package dev.karmakrafts.kmmio
 import kotlinx.io.files.Path
 
 interface VirtualMemory : AutoCloseable {
+    companion object {
+        const val INVALID_FILE_DESCRIPTOR: Int = -1
+    }
+
     val path: Path?
+    val fileDescriptor: Int
     val size: Long
     val accessFlags: AccessFlags
     val mappingFlags: MappingFlags
+
+    val isFileBacked: Boolean
+        get() = fileDescriptor != INVALID_FILE_DESCRIPTOR
 
     fun sync(flags: SyncFlags): Boolean
     fun lock(): Boolean
     fun unlock(): Boolean
     fun protect(accessFlags: AccessFlags): Boolean
     fun resize(size: Long): Boolean
+    fun zero()
 
     fun copyTo(memory: VirtualMemory, size: Long, srcOffset: Long = 0L, dstOffset: Long = 0L): Long
     fun copyFrom(memory: VirtualMemory, size: Long = memory.size, srcOffset: Long = 0L, dstOffset: Long = 0L): Long
 
-    fun readBytes(array: ByteArray, size: Long, srcOffset: Long = 0L, dstOffset: Long = 0L): Long
+    fun readBytes(array: ByteArray, size: Long = this.size, srcOffset: Long = 0L, dstOffset: Long = 0L): Long
     fun writeBytes(array: ByteArray, size: Long = array.size.toLong(), srcOffset: Long = 0L, dstOffset: Long = 0L): Long
 
     fun readAllBytes(): ByteArray {
         check(size <= Int.MAX_VALUE) { "Memory block size exceeds array limit" }
-        return ByteArray(size.toInt()).apply {
-            readBytes(this, 0L, 0L, this@VirtualMemory.size)
-        }
+        return ByteArray(size.toInt()).apply(::readBytes)
     }
 }
 
@@ -48,5 +55,5 @@ expect fun VirtualMemory( // @formatter:off
     size: Long,
     path: Path? = null,
     accessFlags: AccessFlags = AccessFlags.READ + AccessFlags.WRITE,
-    mappingFlags: MappingFlags = MappingFlags.SHARED
+    mappingFlags: MappingFlags = if(path != null) MappingFlags.SHARED else MappingFlags.ANON + MappingFlags.PRIVATE
 ): VirtualMemory // @formatter:on

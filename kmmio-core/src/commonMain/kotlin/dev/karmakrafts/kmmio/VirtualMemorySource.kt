@@ -20,7 +20,7 @@ import kotlinx.io.Buffer
 import kotlinx.io.RawSource
 
 private class VirtualMemorySource(
-    private val memory: VirtualMemory
+    private val memory: VirtualMemory, private val size: Long, private val offset: Long
 ) : RawSource {
     override fun close() {
         TODO("Not yet implemented")
@@ -31,4 +31,4 @@ private class VirtualMemorySource(
     }
 }
 
-fun VirtualMemory.source(size: Long = this.size, offset: Long = 0L): RawSource = VirtualMemorySource(this)
+fun VirtualMemory.source(size: Long = this.size, offset: Long = 0L): RawSource = VirtualMemorySource(this, size, offset)
