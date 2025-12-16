@@ -22,5 +22,6 @@ internal fun String.allocateCStr(): Memory {
     val data = encodeToByteArray()
     return Memory(data.size.toLong() + 1).apply {
         write(0L, data, 0, data.size)
+        write(0L, byteArrayOf(0), data.size, 1) // Write null-terminator
     }
 }

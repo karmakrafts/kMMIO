@@ -179,7 +179,7 @@ internal class PosixVirtualMemory(
         }
         _size = size
         _address = map()
-        return false
+        return true
     }
 
     override fun copyTo(memory: VirtualMemory, size: Long, srcOffset: Long, dstOffset: Long): Long {

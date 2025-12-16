@@ -16,8 +16,10 @@
 
 package dev.karmakrafts.kmmio
 
+import com.sun.jna.Pointer
 import kotlinx.io.files.Path
 import java.io.File
+import kotlin.math.min
 
 private class VirtualMemoryImpl(
     initialSize: Long,
@@ -45,59 +47,83 @@ private class VirtualMemoryImpl(
     private var _accessFlags: AccessFlags = initialAccessFlags
     override val accessFlags: AccessFlags get() = _accessFlags
 
-    override val address: Long
-        get() = TODO("Not yet implemented")
+    private var _address: Pointer = map()
+    override val address: Long get() = Pointer.nativeValue(_address)
 
-    override fun sync(flags: SyncFlags): Boolean {
-        TODO("Not yet implemented")
+    private fun map(): Pointer = requireNotNull(
+        LibC.mmap(
+            addr = null,
+            length = _size,
+            prot = accessFlags.toPosixFlags(),
+            flags = mappingFlags.toPosixFlags(),
+            fd = fileDescriptor,
+            offset = 0L
+        )
+    ) {
+        "Could not map VirtualMemory"
     }
 
-    override fun lock(): Boolean {
-        TODO("Not yet implemented")
+    private fun unmap() {
+        LibC.munmap(_address, _size).checkPosixResult()
     }
 
-    override fun unlock(): Boolean {
-        TODO("Not yet implemented")
-    }
+    override fun sync(flags: SyncFlags): Boolean = LibC.msync(_address, _size, flags.value.toInt()) == 0
+
+    override fun lock(): Boolean = LibC.mlock(_address, _size) == 0
+
+    override fun unlock(): Boolean = LibC.munlock(_address, _size) == 0
 
     override fun protect(accessFlags: AccessFlags): Boolean {
-        TODO("Not yet implemented")
+        return LibC.mprotect(_address, _size, accessFlags.toPosixFlags()) == 0
     }
 
     override fun resize(size: Long): Boolean {
-        TODO("Not yet implemented")
+        if (_size == size) return false // Don't resize if size is already the same
+        unmap()
+        if (isFileBacked) LibC.ftruncate(fileDescriptor, size).checkPosixResult()
+        _address = map()
+        return true
     }
 
     override fun zero() {
-        TODO("Not yet implemented")
+        LibC.memset(_address, 0x00, _size)
     }
 
-    override fun copyTo(
-        memory: VirtualMemory, size: Long, srcOffset: Long, dstOffset: Long
-    ): Long {
-        TODO("Not yet implemented")
+    override fun copyTo(memory: VirtualMemory, size: Long, srcOffset: Long, dstOffset: Long): Long {
+        val actualSize = min(size - srcOffset, memory.size - dstOffset)
+        LibC.memcpy( // @formatter:off
+            Pointer.createConstant(memory.address + dstOffset),
+            Pointer.createConstant(Pointer.nativeValue(_address) + srcOffset),
+            actualSize
+        ) // @formatter:on
+        return actualSize
     }
 
-    override fun copyFrom(
-        memory: VirtualMemory, size: Long, srcOffset: Long, dstOffset: Long
-    ): Long {
-        TODO("Not yet implemented")
+    override fun copyFrom(memory: VirtualMemory, size: Long, srcOffset: Long, dstOffset: Long): Long {
+        val actualSize = min(size - srcOffset, memory.size - dstOffset)
+        LibC.memcpy( // @formatter:off
+            Pointer.createConstant(Pointer.nativeValue(_address) + dstOffset),
+            Pointer.createConstant(memory.address + srcOffset),
+            actualSize
+        ) // @formatter:on
+        return actualSize
     }
 
-    override fun readBytes(
-        array: ByteArray, size: Long, srcOffset: Long, dstOffset: Long
-    ): Long {
-        TODO("Not yet implemented")
+    override fun readBytes(array: ByteArray, size: Long, srcOffset: Long, dstOffset: Long): Long {
+        val actualSize = min(size - srcOffset, array.size.toLong() - dstOffset)
+        _address.read(srcOffset, array, dstOffset.toInt(), actualSize.toInt())
+        return actualSize
     }
 
-    override fun writeBytes(
-        array: ByteArray, size: Long, srcOffset: Long, dstOffset: Long
-    ): Long {
-        TODO("Not yet implemented")
+    override fun writeBytes(array: ByteArray, size: Long, srcOffset: Long, dstOffset: Long): Long {
+        val actualSize = min(size - srcOffset, array.size.toLong() - dstOffset)
+        _address.write(dstOffset, array, srcOffset.toInt(), actualSize.toInt())
+        return actualSize
     }
 
     override fun close() {
-        TODO("Not yet implemented")
+        LibC.munmap(_address, _size).checkPosixResult()
+        if (isFileBacked) LibC.close(fileDescriptor).checkPosixResult()
     }
 }
 
