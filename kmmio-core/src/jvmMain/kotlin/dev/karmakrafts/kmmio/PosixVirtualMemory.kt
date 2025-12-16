@@ -104,16 +104,13 @@ internal class PosixVirtualMemory(
             if (nioPath.exists()) nioPath.deleteExisting()
             val pathAddress = arena.allocateUtf8String(nioPath.absolutePathString())
             val fd = posixOpen.invokeExact( // @formatter:off
-                pathAddress,                                // const char* path
-                _accessFlags.toPosixOpenFlags() or O_CREAT, // int oflags
+                pathAddress,
+                _accessFlags.toPosixOpenFlags() or O_CREAT,
             ) as Int // @formatter:on
             check(fd != VirtualMemory.INVALID_FILE_DESCRIPTOR) {
                 "Could not open file for VirtualMemory at $path"
             }
-            (ftruncate.invokeExact( // @formatter:off
-                fd,   // int fd
-                initialSize // off_t length
-            ) as Int).checkPosixResult() // @formatter:on
+            (ftruncate.invokeExact(fd, initialSize) as Int).checkPosixResult()
             fd
         }
     }
@@ -122,49 +119,40 @@ internal class PosixVirtualMemory(
     override val address: Long get() = _address.address()
 
     private fun map(): MemorySegment = mmap.invokeExact( // @formatter:off
-        MemorySegment.NULL,            // void* addr
-        _size,                         // size_t length
-        _accessFlags.toPosixFlags(),   // int prot
-        mappingFlags.toPosixFlags(),   // int flags
-        fileDescriptor,                // int fd
-        0L                             // off_t offset
+        MemorySegment.NULL,
+        _size,
+        _accessFlags.toPosixFlags(),
+        mappingFlags.toPosixFlags(),
+        fileDescriptor,
+        0L
     ) as MemorySegment // @formatter:on
 
     private fun unmap() {
-        (munmap.invokeExact( // @formatter:off
-            _address, // void* addr
-            _size     // size_t length
-        ) as Int).checkPosixResult() // @formatter:on
+        (munmap.invokeExact(_address, _size) as Int).checkPosixResult()
     }
 
     override fun zero() {
-        memset.invokeExact( // @formatter:off
-            _address, // void* addr
-            0x00,     // int value (& 0xFF)
-            _size     // size_t size
-        ) as MemorySegment // @formatter:on
+        memset.invokeExact(_address, 0x00, _size) as MemorySegment
     }
 
     override fun sync(flags: SyncFlags): Boolean = (msync.invokeExact( // @formatter:off
-        _address,           // void* addr
-        _size,              // size_t length
-        flags.value.toInt() // int flags
+        _address,
+        _size,
+        flags.value.toInt()
     ) as Int) == 0 // @formatter:on
 
     override fun lock(): Boolean = (mlock.invokeExact( // @formatter:off
-        _address, // void* addr
-        _size,    // size_t length
+        _address,
+        _size,
     ) as Int) == 0 // @formatter:on
 
     override fun unlock(): Boolean = (munlock.invokeExact( // @formatter:off
-        _address, // void* addr
-        _size,    // size_t length
+        _address,
+        _size,
     ) as Int) == 0 // @formatter:on
 
     override fun protect(accessFlags: AccessFlags): Boolean = (mprotect.invokeExact(
-        _address,                 // void* addr
-        _size,                    // size_t length,
-        accessFlags.value.toInt() // int prot
+        _address, _size, accessFlags.value.toInt()
     ) as Int) == 0
 
     override fun resize(size: Long): Boolean {
@@ -172,10 +160,7 @@ internal class PosixVirtualMemory(
         unmap()
         if (isFileBacked) {
             // If the mapping is file backed, we need to unmap - resize - remap
-            (ftruncate.invokeExact( // @formatter:off
-                fileDescriptor, // int fd
-                size            // off_t length
-            ) as Int).checkPosixResult() // @formatter:on
+            (ftruncate.invokeExact(fileDescriptor, size) as Int).checkPosixResult()
         }
         _size = size
         _address = map()

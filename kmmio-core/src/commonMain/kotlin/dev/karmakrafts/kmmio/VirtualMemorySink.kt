@@ -24,11 +24,19 @@ private class VirtualMemorySink( // @formatter:off
     private val memory: VirtualMemory,
     private val size: Long,
     private val offset: Long
-) : RawSink { // @formatter:on
+) : RandomAccessSink { // @formatter:on
     private var position: Long = 0L
     private val buffer: ByteArray = ByteArray(8192)
 
     override fun close() = Unit // no-op: does not own the memory
+
+    override fun seek(offset: Long, whence: Whence) = when(whence) {
+        Whence.START -> position = offset
+        Whence.CURRENT -> position += offset
+        Whence.END -> position = size + offset
+    }
+
+    override fun tell(): Long = position
 
     override fun flush() {
         if (memory.isFileBacked) memory.sync(SyncFlags.SYNC)

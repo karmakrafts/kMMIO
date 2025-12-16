@@ -17,9 +17,9 @@
 package dev.karmakrafts.kmmio
 
 import kotlinx.io.files.Path
-import java.lang.foreign.Linker
-import java.lang.foreign.MemorySegment
-import java.lang.foreign.SymbolLookup
+import java.lang.foreign.FunctionDescriptor
+import java.lang.foreign.ValueLayout
+import java.lang.invoke.MethodHandle
 
 @PublishedApi
 @Suppress("Since15") // We compile against Panama as a preview feature to be compatible with Java
@@ -29,20 +29,59 @@ internal class WindowsVirtualMemory(
     initialAccessFlags: AccessFlags,
     override val mappingFlags: MappingFlags
 ) : VirtualMemory {
-    companion object {
-        private val symbolLookup: SymbolLookup = Linker.nativeLinker().defaultLookup()
-        private val CreateFileMappingW: MemorySegment = symbolLookup.find("CreateFileMappingW").orElseThrow()
-        private val MapViewOfFileEx: MemorySegment = symbolLookup.find("MapViewOfFileEx").orElseThrow()
-        private val UnmapViewOfFile: MemorySegment = symbolLookup.find("UnmapViewOfFile").orElseThrow()
-        private val FlushViewOfFile: MemorySegment = symbolLookup.find("FlushViewOfFile").orElseThrow()
-        private val VirtualProtect: MemorySegment = symbolLookup.find("VirtualProtect").orElseThrow()
-        private val VirtualLock: MemorySegment = symbolLookup.find("VirtualLock").orElseThrow()
-        private val VirtualUnlock: MemorySegment = symbolLookup.find("VirtualUnlock").orElseThrow()
-        private val CloseHandle: MemorySegment = symbolLookup.find("CloseHandle").orElseThrow()
-        private val InitializeSecurityDescriptor: MemorySegment =
-            symbolLookup.find("InitializeSecurityDescriptor").orElseThrow()
-        private val _get_osfhandle: MemorySegment = symbolLookup.find("_get_osfhandle").orElseThrow()
-    }
+    companion object { // @formatter:off
+        private val CreateFileMappingW: MethodHandle = getNativeFunction("CreateFileMappingW", FunctionDescriptor.of(ValueLayout.ADDRESS,
+            ValueLayout.ADDRESS,  // HANDLE hFile
+            ValueLayout.ADDRESS,  // LPSECURITY_ATTRIBUTES lpFileMappingAttributes
+            ValueLayout.JAVA_INT, // DWORD flProtect
+            ValueLayout.JAVA_INT, // DWORD dwMaximumSizeHigh
+            ValueLayout.JAVA_INT, // DWORD dwMaximumSizeLow
+            ValueLayout.ADDRESS   // LPCWSTR lpName
+        ))
+        private val MapViewOfFileEx: MethodHandle = getNativeFunction("MapViewOfFileEx", FunctionDescriptor.of(ValueLayout.ADDRESS,
+            ValueLayout.ADDRESS,   // HANDLE hFileMappingObject
+            ValueLayout.JAVA_INT,  // DWORD dwDesiredAccess
+            ValueLayout.JAVA_INT,  // DWORD dwFileOffsetHigh
+            ValueLayout.JAVA_INT,  // DWORD dwFileOffsetLow
+            ValueLayout.JAVA_LONG, // SIZE_T dwNumberOfBytesToMap
+            ValueLayout.ADDRESS    // LPVOID lpBaseAddress
+        ))
+        private val UnmapViewOfFile: MethodHandle = getNativeFunction("UnmapViewOfFile", FunctionDescriptor.of(ValueLayout.JAVA_INT,
+            ValueLayout.ADDRESS // LPCVOID lpBaseAddress
+        ))
+        private val FlushViewOfFile: MethodHandle = getNativeFunction("FlushViewOfFile", FunctionDescriptor.of(ValueLayout.JAVA_INT,
+            ValueLayout.ADDRESS, // LPCVOID lpBaseAddress
+            ValueLayout.JAVA_INT // SIZE_T dwNumberOfBytesToFlush
+        ))
+        private val VirtualProtect: MethodHandle = getNativeFunction("VirtualProtect", FunctionDescriptor.of(ValueLayout.JAVA_INT,
+            ValueLayout.ADDRESS,   // LPVOID lpAddress
+            ValueLayout.JAVA_LONG, // SIZE_T dwSize
+            ValueLayout.JAVA_INT,  // DWORD flNewProtect
+            ValueLayout.ADDRESS    // PDWORD lpfOldProtect
+        ))
+        private val VirtualLock: MethodHandle = getNativeFunction("VirtualLock", FunctionDescriptor.of(ValueLayout.JAVA_INT,
+            ValueLayout.ADDRESS,  // LPVOID lpAddress
+            ValueLayout.JAVA_LONG // SIZE_T dwSize
+        ))
+        private val VirtualUnlock: MethodHandle = getNativeFunction("VirtualUnlock", FunctionDescriptor.of(ValueLayout.JAVA_INT,
+            ValueLayout.ADDRESS,  // LPVOID lpAddress
+            ValueLayout.JAVA_LONG // SIZE_T dwSize
+        ))
+        private val CloseHandle: MethodHandle = getNativeFunction("CloseHandle", FunctionDescriptor.of(ValueLayout.JAVA_INT,
+            ValueLayout.ADDRESS // HANDLE hObject
+        ))
+        private val InitializeSecurityDescriptor: MethodHandle = getNativeFunction("InitializeSecurityDescriptor",
+            FunctionDescriptor.of(ValueLayout.JAVA_INT,
+                ValueLayout.ADDRESS, // PSECURITY_DESCRIPTOR pSecurityDesciptor
+                ValueLayout.JAVA_INT // DWORD dwRevision
+            ))
+        private val GetSystemInfo: MethodHandle = getNativeFunction("GetSystemInfo", FunctionDescriptor.ofVoid(
+            ValueLayout.ADDRESS // LPSYSTEM_INFO lpSystemInfo
+        ))
+        private val _get_osfhandle: MethodHandle = getNativeFunction("_get_osfhandle", FunctionDescriptor.of(ValueLayout.ADDRESS,
+            ValueLayout.JAVA_INT // int fd
+        ))
+    } // @formatter:on
 
     private var _size: Long = initialSize
     override val size: Long get() = _size
