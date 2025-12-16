@@ -88,48 +88,6 @@ internal class PosixVirtualMemory(
             ValueLayout.JAVA_INT, // int value (& 0xFF)
             ValueLayout.JAVA_LONG // size_t size
         ))
-
-        private const val O_RDONLY: Int = 0x00
-        private const val O_WRONLY: Int = 0x01
-        private const val O_RDWR: Int = 0x02
-        private val O_CREAT: Int = if(isMacos) 0x200 else 0x40
-
-        private const val MAP_NONE: Int = 0x00
-        private const val MAP_SHARED: Int = 0x01
-        private const val MAP_PRIVATE: Int = 0x02
-        private val MAP_ANON: Int = if(isMacos) 0x1000 else 0x20
-
-        private const val PROT_NONE: Int = 0x00
-        private const val PROT_READ: Int = 0x01
-        private const val PROT_WRITE: Int = 0x02
-        private const val PROT_EXEC: Int = 0x04
-
-        private fun AccessFlags.toPosixFlags(): Int {
-            var result = PROT_NONE
-            if(AccessFlags.READ in this) result = result or PROT_READ
-            if(AccessFlags.WRITE in this) result = result or PROT_WRITE
-            if(AccessFlags.EXEC in this) result = result or PROT_EXEC
-            return result
-        }
-
-        private fun AccessFlags.toPosixOpenFlags(): Int = when {
-            AccessFlags.READ in this && AccessFlags.WRITE in this -> O_RDWR
-            this == AccessFlags.READ -> O_RDONLY
-            this == AccessFlags.WRITE -> O_WRONLY
-            else -> error("Unsupported access flags in VirtualMemory: 0x${value.toHexString()}")
-        }
-
-        private fun MappingFlags.toPosixFlags(): Int {
-            var result = MAP_NONE
-            if(MappingFlags.ANON in this) result = result or MAP_ANON
-            if(MappingFlags.SHARED in this) result = result or MAP_SHARED
-            if(MappingFlags.PRIVATE in this) result = result or MAP_PRIVATE
-            return result
-        }
-
-        private fun Int.checkForError() {
-            check(this == 0) { "Function did not return successfully: error 0x${toHexString()}" }
-        }
     } // @formatter:on
 
     private var _size: Long = initialSize
@@ -154,7 +112,7 @@ internal class PosixVirtualMemory(
             (ftruncate.invokeExact( // @formatter:off
                 fd,   // int fd
                 _size // off_t length
-            ) as Int).checkForError() // @formatter:on
+            ) as Int).checkPosixResult() // @formatter:on
             return@use fd
         }
     }
@@ -175,7 +133,7 @@ internal class PosixVirtualMemory(
         (munmap.invokeExact( // @formatter:off
             _address, // void* addr
             _size     // size_t length
-        ) as Int).checkForError() // @formatter:on
+        ) as Int).checkPosixResult() // @formatter:on
     }
 
     override fun zero() {
@@ -216,7 +174,7 @@ internal class PosixVirtualMemory(
             (ftruncate.invokeExact( // @formatter:off
                 fileDescriptor, // int fd
                 size            // off_t length
-            ) as Int).checkForError() // @formatter:on
+            ) as Int).checkPosixResult() // @formatter:on
         }
         _size = size
         _address = map()
@@ -268,7 +226,7 @@ internal class PosixVirtualMemory(
     override fun close() {
         unmap()
         if (isFileBacked) {
-            (posixClose.invokeExact(fileDescriptor) as Int).checkForError()
+            (posixClose.invokeExact(fileDescriptor) as Int).checkPosixResult()
         }
     }
 }

@@ -14,23 +14,7 @@
  * limitations under the License.
  */
 
-@file:Suppress("Since15") // We compile against Panama as a preview feature to be compatible with Java 21
-
 package dev.karmakrafts.kmmio
-
-import java.lang.foreign.FunctionDescriptor
-import java.lang.foreign.Linker
-import java.lang.invoke.MethodHandle
 
 internal val isWindows: Boolean = "win" in System.getProperty("os.name").lowercase()
 internal val isMacos: Boolean = "mac" in System.getProperty("os.name").lowercase()
-
-internal fun getNativeFunction( // @formatter:off
-    name: String,
-    descriptor: FunctionDescriptor,
-    vararg options: Linker.Option
-): MethodHandle { // @formatter:on
-    val linker = Linker.nativeLinker()
-    val address = linker.defaultLookup().find(name).orElseThrow()
-    return linker.downcallHandle(address, descriptor, *options)
-}

@@ -58,6 +58,10 @@ kotlin {
     tvosSimulatorArm64()
     applyDefaultHierarchyTemplate {
         common {
+            group("jvmAndAndroid") {
+                withJvm()
+                withAndroidTarget()
+            }
             group("posix") { // All non-Windows OSs can use mmap no problem
                 withAndroidNative()
                 withLinux()

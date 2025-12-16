@@ -17,6 +17,7 @@
 package dev.karmakrafts.kmmio
 
 import kotlinx.io.files.Path
+import java.io.File
 
 private class VirtualMemoryImpl(
     initialSize: Long,
@@ -24,12 +25,25 @@ private class VirtualMemoryImpl(
     initialAccessFlags: AccessFlags,
     override val mappingFlags: MappingFlags
 ) : VirtualMemory {
-    override val fileDescriptor: Int
-        get() = TODO("Not yet implemented")
-    override val size: Long
-        get() = TODO("Not yet implemented")
-    override val accessFlags: AccessFlags
-        get() = TODO("Not yet implemented")
+    override val fileDescriptor: Int = run {
+        if (path == null) return@run VirtualMemory.INVALID_FILE_DESCRIPTOR
+        val file = File(path.toString())
+        if (file.exists()) file.createNewFile()
+        val fd = file.absolutePath.allocateCStr().use { pathMemory ->
+            LibC.open(pathMemory.getPointer(0L), initialAccessFlags.toPosixOpenFlags() or O_CREAT)
+        }
+        check(fd != VirtualMemory.INVALID_FILE_DESCRIPTOR) {
+            "Could not open file for VirtualMemory at $path"
+        }
+        LibC.ftruncate(fd, initialSize).checkPosixResult()
+        fd
+    }
+
+    private var _size: Long = initialSize
+    override val size: Long get() = _size
+
+    private var _accessFlags: AccessFlags = initialAccessFlags
+    override val accessFlags: AccessFlags get() = _accessFlags
 
     override fun sync(flags: SyncFlags): Boolean {
         TODO("Not yet implemented")
