@@ -18,6 +18,9 @@ package dev.karmakrafts.kmmio
 
 import kotlinx.io.files.Path
 import java.lang.foreign.FunctionDescriptor
+import java.lang.foreign.MemoryLayout
+import java.lang.foreign.StructLayout
+import java.lang.foreign.UnionLayout
 import java.lang.foreign.ValueLayout
 import java.lang.invoke.MethodHandle
 
@@ -30,6 +33,36 @@ internal class WindowsVirtualMemory(
     override val mappingFlags: MappingFlags
 ) : VirtualMemory {
     companion object { // @formatter:off
+        private val SYSTEM_INFO_S: StructLayout = MemoryLayout.structLayout(
+            ValueLayout.JAVA_SHORT, // WORD wProcessorArchitecture
+            ValueLayout.JAVA_SHORT  // WORD wReserved
+        )
+        private val SYSTEM_INFO_U: UnionLayout = MemoryLayout.unionLayout(
+            ValueLayout.JAVA_INT, // DWORD dwOemId
+            SYSTEM_INFO_S         // DUMMYSTRUCTNAME
+        )
+        private val SYSTEM_INFO: StructLayout = MemoryLayout.structLayout(
+            SYSTEM_INFO_U,          // DUMMYUNIONNAME
+            ValueLayout.JAVA_INT,   // DWORD dwPageSize
+            ValueLayout.ADDRESS,    // LPVOID lpMinimumApplicationAddress
+            ValueLayout.ADDRESS,    // LPVOID lpMaximumApplicationAddress
+            ValueLayout.ADDRESS,    // DWORD_PTR dwActiveProcessorMask
+            ValueLayout.JAVA_INT,   // DWORD dwNumberOfProcessors
+            ValueLayout.JAVA_INT,   // DWORD dwProcessorType
+            ValueLayout.JAVA_INT,   // DWORD dwAllocationGranularity
+            ValueLayout.JAVA_SHORT, // WORD wProcessorLevel
+            ValueLayout.JAVA_SHORT  // WORD wProcessorRevision
+        )
+        private val SECURITY_DESCRIPTOR: StructLayout = MemoryLayout.structLayout(
+            ValueLayout.JAVA_BYTE,  // BYTE Revision
+            ValueLayout.JAVA_BYTE,  // BYTE Sbz1
+            ValueLayout.JAVA_SHORT, // SECURITY_DESCRIPTOR_CONTROL Control
+            ValueLayout.ADDRESS,    // PSID Owner
+            ValueLayout.ADDRESS,    // PSID Group
+            ValueLayout.ADDRESS,    // PACL Sacl
+            ValueLayout.ADDRESS     // PACL Dacl
+        )
+
         private val CreateFileMappingW: MethodHandle = getNativeFunction("CreateFileMappingW", FunctionDescriptor.of(ValueLayout.ADDRESS,
             ValueLayout.ADDRESS,  // HANDLE hFile
             ValueLayout.ADDRESS,  // LPSECURITY_ATTRIBUTES lpFileMappingAttributes
