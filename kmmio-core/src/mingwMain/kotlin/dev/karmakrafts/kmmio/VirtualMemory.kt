@@ -33,6 +33,13 @@ private class VirtualMemoryImpl(
     override val fileDescriptor: Int
         get() = TODO("Not yet implemented")
 
+    override val address: Long
+        get() = TODO("Not yet implemented")
+
+    override fun zero() {
+        TODO("Not yet implemented")
+    }
+
     override fun sync(flags: SyncFlags): Boolean {
         TODO("Not yet implemented")
     }

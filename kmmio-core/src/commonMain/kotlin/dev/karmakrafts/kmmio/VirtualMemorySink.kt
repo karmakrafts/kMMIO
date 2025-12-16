@@ -18,20 +18,38 @@ package dev.karmakrafts.kmmio
 
 import kotlinx.io.Buffer
 import kotlinx.io.RawSink
+import kotlin.math.min
 
-private class VirtualMemorySink(
-    private val memory: VirtualMemory, private val size: Long, private val offset: Long
-) : RawSink {
-    override fun close() {
-        TODO("Not yet implemented")
-    }
+private class VirtualMemorySink( // @formatter:off
+    private val memory: VirtualMemory,
+    private val size: Long,
+    private val offset: Long
+) : RawSink { // @formatter:on
+    private var position: Long = 0L
+    private val buffer: ByteArray = ByteArray(8192)
+
+    override fun close() = Unit // no-op: does not own the memory
 
     override fun flush() {
-        TODO("Not yet implemented")
+        if (memory.isFileBacked) memory.sync(SyncFlags.SYNC)
     }
 
     override fun write(source: Buffer, byteCount: Long) {
-        TODO("Not yet implemented")
+        val remaining = size - position
+        require(byteCount <= remaining) {
+            "Not enough space in VirtualMemory region: requested $byteCount bytes, $remaining bytes were remaining"
+        }
+        var toWrite = byteCount
+        while (toWrite > 0L) {
+            val chunk = min(toWrite, buffer.size.toLong()).toInt()
+            val read = source.readAtMostTo(buffer, 0, chunk)
+            if (read <= 0) break
+            val wrote = memory.writeBytes(buffer, read.toLong(), srcOffset = 0L, dstOffset = offset + position)
+            position += wrote
+            toWrite -= wrote
+            if (wrote < read) break // Shouldn't happen, but guard against partial write
+        }
+        check(toWrite == 0L) { "Source did not provide enough data: $toWrite bytes remaining" }
     }
 }
 

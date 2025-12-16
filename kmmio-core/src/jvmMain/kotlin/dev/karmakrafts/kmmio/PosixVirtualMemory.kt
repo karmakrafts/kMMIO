@@ -204,23 +204,19 @@ internal class PosixVirtualMemory(
 
     override fun readBytes(array: ByteArray, size: Long, srcOffset: Long, dstOffset: Long): Long {
         val actualSize = min(size - srcOffset, array.size.toLong() - dstOffset)
-        val segment = MemorySegment.ofArray(array)
-        memcpy.invokeExact( // @formatter:off
-            MemorySegment.ofAddress(segment.address() + dstOffset),  // void* dst
-            MemorySegment.ofAddress(_address.address() + srcOffset), // const void* src
-            actualSize                                               // size_t size
-        ) as MemorySegment // @formatter:on
+        _address.reinterpret(_size)
+            .asSlice(srcOffset, _size - srcOffset)
+            .asByteBuffer()
+            .get(array, dstOffset.toInt(), array.size - dstOffset.toInt())
         return actualSize
     }
 
     override fun writeBytes(array: ByteArray, size: Long, srcOffset: Long, dstOffset: Long): Long {
-        val actualSize = min(size - srcOffset, array.size.toLong() - dstOffset)
-        val segment = MemorySegment.ofArray(array)
-        memcpy.invokeExact( // @formatter:off
-            MemorySegment.ofAddress(_address.address() + dstOffset), // void* dst
-            MemorySegment.ofAddress(segment.address() + srcOffset),  // const void* src
-            actualSize                                               // size_t size
-        ) as MemorySegment // @formatter:on
+        val actualSize = min(size - srcOffset, _size - dstOffset)
+        _address.reinterpret(_size)
+            .asSlice(dstOffset, _size - dstOffset)
+            .asByteBuffer()
+            .put(array, srcOffset.toInt(), (size - srcOffset).toInt())
         return actualSize
     }
 
