@@ -16,6 +16,7 @@
 
 @file:OptIn(ExperimentalKotlinGradlePluginApi::class)
 
+import dev.karmakrafts.conventions.asAAR
 import dev.karmakrafts.conventions.configureJava
 import dev.karmakrafts.conventions.setProjectInfo
 import org.jetbrains.kotlin.gradle.ExperimentalKotlinGradlePluginApi
@@ -77,6 +78,11 @@ kotlin {
         commonTest {
             dependencies {
                 implementation(libs.kotlin.test)
+            }
+        }
+        androidMain {
+            dependencies {
+                implementation(libs.jna.asAAR())
             }
         }
     }
