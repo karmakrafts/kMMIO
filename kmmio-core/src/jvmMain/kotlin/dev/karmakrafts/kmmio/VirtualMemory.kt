@@ -17,6 +17,7 @@
 package dev.karmakrafts.kmmio
 
 import kotlinx.io.files.Path
+import java.lang.foreign.MemorySegment
 
 actual fun VirtualMemory( // @formatter:off
     size: Long,
@@ -31,3 +32,6 @@ actual fun VirtualMemory( // @formatter:off
         PosixVirtualMemory(size, path, accessFlags, mappingFlags)
     }
 }
+
+@Suppress("Since15") // We compile against Panama as a preview feature to be compatible with Java 21
+fun VirtualMemory.asSegment(): MemorySegment = MemorySegment.ofAddress(address)

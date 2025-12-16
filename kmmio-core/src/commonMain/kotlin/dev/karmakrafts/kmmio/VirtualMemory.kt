@@ -23,6 +23,7 @@ interface VirtualMemory : AutoCloseable {
         const val INVALID_FILE_DESCRIPTOR: Int = -1
     }
 
+    val address: Long
     val path: Path?
     val fileDescriptor: Int
     val size: Long

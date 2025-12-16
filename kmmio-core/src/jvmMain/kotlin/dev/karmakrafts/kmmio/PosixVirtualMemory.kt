@@ -28,13 +28,14 @@ import kotlin.io.path.deleteExisting
 import kotlin.io.path.exists
 import kotlin.math.min
 
+@PublishedApi
 @Suppress("Since15") // We compile against Panama as a preview feature to be compatible with Java 21
 internal class PosixVirtualMemory(
     initialSize: Long,
     override val path: Path?,
     initialAccessFlags: AccessFlags,
     override val mappingFlags: MappingFlags
-) : JvmVirtualMemory {
+) : VirtualMemory {
     companion object { // @formatter:off
         private val posixOpen: MethodHandle = getNativeFunction("open", FunctionDescriptor.of(ValueLayout.JAVA_INT,
             ValueLayout.ADDRESS, // const char* path
@@ -118,7 +119,7 @@ internal class PosixVirtualMemory(
     }
 
     private var _address: MemorySegment = map()
-    override val address: MemorySegment get() = _address
+    override val address: Long get() = _address.address()
 
     private fun map(): MemorySegment = mmap.invokeExact( // @formatter:off
         MemorySegment.NULL,            // void* addr
@@ -184,7 +185,7 @@ internal class PosixVirtualMemory(
     override fun copyTo(memory: VirtualMemory, size: Long, srcOffset: Long, dstOffset: Long): Long {
         val actualSize = min(size - srcOffset, memory.size - dstOffset)
         memcpy.invokeExact( // @formatter:off
-            MemorySegment.ofAddress(memory.address.address() + dstOffset), // void* dst
+            MemorySegment.ofAddress(memory.address + dstOffset), // void* dst
             MemorySegment.ofAddress(_address.address() + srcOffset),       // const void* src
             actualSize                                                     // size_t size
         ) as MemorySegment // @formatter:on
@@ -195,7 +196,7 @@ internal class PosixVirtualMemory(
         val actualSize = min(size - srcOffset, memory.size - dstOffset)
         memcpy.invokeExact( // @formatter:off
             MemorySegment.ofAddress(_address.address() + dstOffset),       // void* dst
-            MemorySegment.ofAddress(memory.address.address() + srcOffset), // const void* src
+            MemorySegment.ofAddress(memory.address + srcOffset), // const void* src
             actualSize                                                     // size_t size
         ) as MemorySegment // @formatter:on
         return actualSize

@@ -45,6 +45,9 @@ private class VirtualMemoryImpl(
     private var _accessFlags: AccessFlags = initialAccessFlags
     override val accessFlags: AccessFlags get() = _accessFlags
 
+    override val address: Long
+        get() = TODO("Not yet implemented")
+
     override fun sync(flags: SyncFlags): Boolean {
         TODO("Not yet implemented")
     }

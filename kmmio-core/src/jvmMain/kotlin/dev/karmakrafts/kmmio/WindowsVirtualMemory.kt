@@ -21,6 +21,7 @@ import java.lang.foreign.Linker
 import java.lang.foreign.MemorySegment
 import java.lang.foreign.SymbolLookup
 
+@PublishedApi
 @Suppress("Since15") // We compile against Panama as a preview feature to be compatible with Java
 internal class WindowsVirtualMemory(
     initialSize: Long,
@@ -50,6 +51,9 @@ internal class WindowsVirtualMemory(
     override val accessFlags: AccessFlags = initialAccessFlags
 
     override val fileDescriptor: Int
+        get() = TODO("Not yet implemented")
+
+    override val address: Long
         get() = TODO("Not yet implemented")
 
     override fun zero() {
