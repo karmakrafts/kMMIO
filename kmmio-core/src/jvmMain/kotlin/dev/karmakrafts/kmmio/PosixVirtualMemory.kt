@@ -17,38 +17,20 @@
 package dev.karmakrafts.kmmio
 
 import kotlinx.io.files.Path
-import java.lang.foreign.Arena
 import java.lang.foreign.FunctionDescriptor
-import java.lang.foreign.Linker
 import java.lang.foreign.MemorySegment
 import java.lang.foreign.ValueLayout
 import java.lang.invoke.MethodHandle
-import kotlin.io.path.absolutePathString
-import kotlin.io.path.deleteExisting
-import kotlin.io.path.exists
-import kotlin.math.min
 
 @PublishedApi
 @Suppress("Since15") // We compile against Panama as a preview feature to be compatible with Java 21
-internal class PosixVirtualMemory(
+internal class PosixVirtualMemory( // @formatter:off
     initialSize: Long,
-    override val path: Path?,
+    path: Path?,
     initialAccessFlags: AccessFlags,
-    override val mappingFlags: MappingFlags
-) : VirtualMemory {
+    mappingFlags: MappingFlags
+) : AbstractVirtualMemory(initialSize, path, initialAccessFlags, mappingFlags) { // @formatter:on
     companion object { // @formatter:off
-        private val posixOpen: MethodHandle = getNativeFunction("open", FunctionDescriptor.of(ValueLayout.JAVA_INT,
-            ValueLayout.ADDRESS, // const char* path
-            ValueLayout.JAVA_INT // int oflags
-            // ...
-        ), Linker.Option.firstVariadicArg(2))
-        private val posixClose: MethodHandle = getNativeFunction("close", FunctionDescriptor.of(ValueLayout.JAVA_INT,
-            ValueLayout.JAVA_INT // int fd
-        ))
-        private val ftruncate: MethodHandle = getNativeFunction("ftruncate", FunctionDescriptor.of(ValueLayout.JAVA_INT,
-            ValueLayout.JAVA_INT, // int fd
-            ValueLayout.JAVA_LONG // off_t length
-        ))
         private val mmap: MethodHandle = getNativeFunction("mmap", FunctionDescriptor.of(ValueLayout.ADDRESS,
             ValueLayout.ADDRESS,   // void* addr
             ValueLayout.JAVA_LONG, // size_t length
@@ -79,46 +61,9 @@ internal class PosixVirtualMemory(
             ValueLayout.ADDRESS,  // void* addr
             ValueLayout.JAVA_LONG // size_t len
         ))
-        private val memcpy: MethodHandle = getNativeFunction("memcpy", FunctionDescriptor.of(ValueLayout.ADDRESS,
-            ValueLayout.ADDRESS,  // void* dst
-            ValueLayout.ADDRESS,  // const void* src
-            ValueLayout.JAVA_LONG // size_t size
-        ))
-        private val memset: MethodHandle = getNativeFunction("memset", FunctionDescriptor.of(ValueLayout.ADDRESS,
-            ValueLayout.ADDRESS,  // void* addr
-            ValueLayout.JAVA_INT, // int value (& 0xFF)
-            ValueLayout.JAVA_LONG // size_t size
-        ))
     } // @formatter:on
 
-    private var _size: Long = initialSize
-    override val size: Long get() = _size
-
-    private var _accessFlags: AccessFlags = initialAccessFlags
-    override val accessFlags: AccessFlags = initialAccessFlags
-
-    override val fileDescriptor: Int = run {
-        if (path == null) return@run VirtualMemory.INVALID_FILE_DESCRIPTOR // This virtual memory block is not file backed
-        val nioPath = java.nio.file.Path.of(path.toString())
-        Arena.ofConfined().use { arena ->
-            if (nioPath.exists()) nioPath.deleteExisting()
-            val pathAddress = arena.allocateUtf8String(nioPath.absolutePathString())
-            val fd = posixOpen.invokeExact( // @formatter:off
-                pathAddress,
-                _accessFlags.toPosixOpenFlags() or O_CREAT,
-            ) as Int // @formatter:on
-            check(fd != VirtualMemory.INVALID_FILE_DESCRIPTOR) {
-                "Could not open file for VirtualMemory at $path"
-            }
-            (ftruncate.invokeExact(fd, initialSize) as Int).checkPosixResult()
-            fd
-        }
-    }
-
-    private var _address: MemorySegment = map()
-    override val address: Long get() = _address.address()
-
-    private fun map(): MemorySegment = mmap.invokeExact( // @formatter:off
+    override fun map(): MemorySegment = mmap.invokeExact( // @formatter:off
         MemorySegment.NULL,
         _size,
         _accessFlags.toPosixFlags(),
@@ -127,12 +72,8 @@ internal class PosixVirtualMemory(
         0L
     ) as MemorySegment // @formatter:on
 
-    private fun unmap() {
+    override fun unmap() {
         (munmap.invokeExact(_address, _size) as Int).checkPosixResult()
-    }
-
-    override fun zero() {
-        memset.invokeExact(_address, 0x00, _size) as MemorySegment
     }
 
     override fun sync(flags: SyncFlags): Boolean = (msync.invokeExact( // @formatter:off
@@ -151,64 +92,12 @@ internal class PosixVirtualMemory(
         _size,
     ) as Int) == 0 // @formatter:on
 
-    override fun protect(accessFlags: AccessFlags): Boolean = (mprotect.invokeExact(
-        _address, _size, accessFlags.value.toInt()
-    ) as Int) == 0
-
-    override fun resize(size: Long): Boolean {
-        if (_size == size) return false // Don't resize if size is already the same
-        unmap()
-        if (isFileBacked) {
-            // If the mapping is file backed, we need to unmap - resize - remap
-            (ftruncate.invokeExact(fileDescriptor, size) as Int).checkPosixResult()
-        }
-        _size = size
-        _address = map()
-        return true
-    }
-
-    override fun copyTo(memory: VirtualMemory, size: Long, srcOffset: Long, dstOffset: Long): Long {
-        val actualSize = min(size - srcOffset, memory.size - dstOffset)
-        memcpy.invokeExact( // @formatter:off
-            MemorySegment.ofAddress(memory.address + dstOffset), // void* dst
-            MemorySegment.ofAddress(_address.address() + srcOffset),       // const void* src
-            actualSize                                                     // size_t size
-        ) as MemorySegment // @formatter:on
-        return actualSize
-    }
-
-    override fun copyFrom(memory: VirtualMemory, size: Long, srcOffset: Long, dstOffset: Long): Long {
-        val actualSize = min(size - srcOffset, memory.size - dstOffset)
-        memcpy.invokeExact( // @formatter:off
-            MemorySegment.ofAddress(_address.address() + dstOffset),       // void* dst
-            MemorySegment.ofAddress(memory.address + srcOffset), // const void* src
-            actualSize                                                     // size_t size
-        ) as MemorySegment // @formatter:on
-        return actualSize
-    }
-
-    override fun readBytes(array: ByteArray, size: Long, srcOffset: Long, dstOffset: Long): Long {
-        val actualSize = min(size - srcOffset, array.size.toLong() - dstOffset)
-        _address.reinterpret(_size)
-            .asSlice(srcOffset, _size - srcOffset)
-            .asByteBuffer()
-            .get(array, dstOffset.toInt(), size.toInt() - dstOffset.toInt())
-        return actualSize
-    }
-
-    override fun writeBytes(array: ByteArray, size: Long, srcOffset: Long, dstOffset: Long): Long {
-        val actualSize = min(size - srcOffset, _size - dstOffset)
-        _address.reinterpret(_size)
-            .asSlice(dstOffset, _size - dstOffset)
-            .asByteBuffer()
-            .put(array, srcOffset.toInt(), (size - srcOffset).toInt())
-        return actualSize
-    }
-
-    override fun close() {
-        unmap()
-        if (isFileBacked) {
-            (posixClose.invokeExact(fileDescriptor) as Int).checkPosixResult()
-        }
+    override fun protect(accessFlags: AccessFlags): Boolean {
+        if (_accessFlags == accessFlags) return false
+        val result = (mprotect.invokeExact(
+            _address, _size, accessFlags.value.toInt()
+        ) as Int) == 0
+        _accessFlags = accessFlags
+        return result
     }
 }

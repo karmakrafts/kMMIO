@@ -17,7 +17,6 @@
 package dev.karmakrafts.kmmio
 
 import kotlinx.io.Buffer
-import kotlinx.io.RawSink
 import kotlin.math.min
 
 private class VirtualMemorySink( // @formatter:off
@@ -30,10 +29,10 @@ private class VirtualMemorySink( // @formatter:off
 
     override fun close() = Unit // no-op: does not own the memory
 
-    override fun seek(offset: Long, whence: Whence) = when(whence) {
-        Whence.START -> position = offset
-        Whence.CURRENT -> position += offset
-        Whence.END -> position = size + offset
+    override fun seek(offset: Long, whence: RandomAccess.Whence) = when (whence) {
+        RandomAccess.Whence.START -> position = offset
+        RandomAccess.Whence.CURRENT -> position += offset
+        RandomAccess.Whence.END -> position = size + offset
     }
 
     override fun tell(): Long = position
@@ -61,4 +60,5 @@ private class VirtualMemorySink( // @formatter:off
     }
 }
 
-fun VirtualMemory.sink(size: Long = this.size, offset: Long = 0L): RawSink = VirtualMemorySink(this, size, offset)
+fun VirtualMemory.sink(size: Long = this.size, offset: Long = 0L): RandomAccessSink =
+    VirtualMemorySink(this, size, offset)

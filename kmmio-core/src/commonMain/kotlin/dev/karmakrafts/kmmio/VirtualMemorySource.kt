@@ -17,7 +17,6 @@
 package dev.karmakrafts.kmmio
 
 import kotlinx.io.Buffer
-import kotlinx.io.RawSource
 import kotlin.math.min
 
 private class VirtualMemorySource( // @formatter:off
@@ -28,10 +27,10 @@ private class VirtualMemorySource( // @formatter:off
     private var position: Long = 0L
     private val buffer: ByteArray = ByteArray(8192)
 
-    override fun seek(offset: Long, whence: Whence) = when(whence) {
-        Whence.START -> position = offset
-        Whence.CURRENT -> position += offset
-        Whence.END -> position = size + offset
+    override fun seek(offset: Long, whence: RandomAccess.Whence) = when (whence) {
+        RandomAccess.Whence.START -> position = offset
+        RandomAccess.Whence.CURRENT -> position += offset
+        RandomAccess.Whence.END -> position = size + offset
     }
 
     override fun tell(): Long = position
@@ -58,4 +57,5 @@ private class VirtualMemorySource( // @formatter:off
     }
 }
 
-fun VirtualMemory.source(size: Long = this.size, offset: Long = 0L): RawSource = VirtualMemorySource(this, size, offset)
+fun VirtualMemory.source(size: Long = this.size, offset: Long = 0L): RandomAccessSource =
+    VirtualMemorySource(this, size, offset)

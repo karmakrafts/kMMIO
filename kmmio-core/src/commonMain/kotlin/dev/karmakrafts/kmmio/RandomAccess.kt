@@ -17,6 +17,12 @@
 package dev.karmakrafts.kmmio
 
 interface RandomAccess {
+    enum class Whence {
+        START,
+        CURRENT,
+        END
+    }
+
     fun seek(offset: Long, whence: Whence = Whence.CURRENT)
     fun tell(): Long
 }

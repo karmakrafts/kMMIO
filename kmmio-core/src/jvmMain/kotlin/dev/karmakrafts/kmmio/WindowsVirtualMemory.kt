@@ -19,6 +19,7 @@ package dev.karmakrafts.kmmio
 import kotlinx.io.files.Path
 import java.lang.foreign.FunctionDescriptor
 import java.lang.foreign.MemoryLayout
+import java.lang.foreign.MemorySegment
 import java.lang.foreign.StructLayout
 import java.lang.foreign.UnionLayout
 import java.lang.foreign.ValueLayout
@@ -26,12 +27,12 @@ import java.lang.invoke.MethodHandle
 
 @PublishedApi
 @Suppress("Since15") // We compile against Panama as a preview feature to be compatible with Java
-internal class WindowsVirtualMemory(
+internal class WindowsVirtualMemory( // @formatter:off
     initialSize: Long,
-    override val path: Path?,
+    path: Path?,
     initialAccessFlags: AccessFlags,
-    override val mappingFlags: MappingFlags
-) : VirtualMemory {
+    mappingFlags: MappingFlags
+) : AbstractVirtualMemory(initialSize, path, initialAccessFlags, mappingFlags) { // @formatter:on
     companion object { // @formatter:off
         private val SYSTEM_INFO_S: StructLayout = MemoryLayout.structLayout(
             ValueLayout.JAVA_SHORT, // WORD wProcessorArchitecture
@@ -116,19 +117,11 @@ internal class WindowsVirtualMemory(
         ))
     } // @formatter:on
 
-    private var _size: Long = initialSize
-    override val size: Long get() = _size
+    override fun map(): MemorySegment {
+        TODO("Not yet implemented")
+    }
 
-    private var _accessFlags: AccessFlags = initialAccessFlags
-    override val accessFlags: AccessFlags = initialAccessFlags
-
-    override val fileDescriptor: Int
-        get() = TODO("Not yet implemented")
-
-    override val address: Long
-        get() = TODO("Not yet implemented")
-
-    override fun zero() {
+    override fun unmap() {
         TODO("Not yet implemented")
     }
 
@@ -145,38 +138,6 @@ internal class WindowsVirtualMemory(
     }
 
     override fun protect(accessFlags: AccessFlags): Boolean {
-        TODO("Not yet implemented")
-    }
-
-    override fun resize(size: Long): Boolean {
-        TODO("Not yet implemented")
-    }
-
-    override fun copyTo(
-        memory: VirtualMemory, size: Long, srcOffset: Long, dstOffset: Long
-    ): Long {
-        TODO("Not yet implemented")
-    }
-
-    override fun copyFrom(
-        memory: VirtualMemory, size: Long, srcOffset: Long, dstOffset: Long
-    ): Long {
-        TODO("Not yet implemented")
-    }
-
-    override fun readBytes(
-        array: ByteArray, size: Long, srcOffset: Long, dstOffset: Long
-    ): Long {
-        TODO("Not yet implemented")
-    }
-
-    override fun writeBytes(
-        array: ByteArray, size: Long, srcOffset: Long, dstOffset: Long
-    ): Long {
-        TODO("Not yet implemented")
-    }
-
-    override fun close() {
         TODO("Not yet implemented")
     }
 }

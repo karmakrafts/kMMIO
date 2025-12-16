@@ -18,9 +18,23 @@
 
 package dev.karmakrafts.kmmio
 
+import java.lang.foreign.Arena
 import java.lang.foreign.FunctionDescriptor
 import java.lang.foreign.Linker
+import java.lang.foreign.MemorySegment
 import java.lang.invoke.MethodHandle
+import java.nio.charset.StandardCharsets
+
+internal fun Arena.allocateUtf16String(value: String): MemorySegment {
+    val data = value.toByteArray(StandardCharsets.UTF_16)
+    val size = (data.size + 1) * Short.SIZE_BYTES
+    val segment = allocate(size.toLong(), Short.SIZE_BYTES.toLong())
+    val buffer = segment.asByteBuffer()
+    buffer.put(data, 0, data.size)
+    buffer.put(0x00)
+    buffer.put(0x00) // Write 2-byte null-terminator
+    return segment
+}
 
 internal fun getNativeFunction( // @formatter:off
     name: String,
