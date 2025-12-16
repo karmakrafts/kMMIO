@@ -112,9 +112,9 @@ internal class PosixVirtualMemory(
             }
             (ftruncate.invokeExact( // @formatter:off
                 fd,   // int fd
-                _size // off_t length
+                initialSize // off_t length
             ) as Int).checkPosixResult() // @formatter:on
-            return@use fd
+            fd
         }
     }
 

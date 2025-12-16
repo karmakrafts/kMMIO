@@ -62,13 +62,15 @@ kotlin {
                 withJvm()
                 withAndroidTarget()
             }
-            group("posix") { // All non-Windows OSs can use mmap no problem
-                withAndroidNative()
-                withLinux()
-                withMacos()
-                withIos()
-                withWatchos()
-                withTvos()
+            group("native") {
+                group("posix") { // All non-Windows OSs can use mmap no problem
+                    withAndroidNative()
+                    withLinux()
+                    withMacos()
+                    withIos()
+                    withWatchos()
+                    withTvos()
+                }
             }
         }
     }
@@ -86,7 +88,7 @@ kotlin {
         }
         androidMain {
             dependencies {
-                implementation(libs.jna.asAAR())
+                api(libs.jna.asAAR())
             }
         }
     }
