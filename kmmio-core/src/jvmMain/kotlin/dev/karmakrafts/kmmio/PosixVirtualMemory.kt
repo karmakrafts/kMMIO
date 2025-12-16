@@ -17,13 +17,15 @@
 package dev.karmakrafts.kmmio
 
 import kotlinx.io.files.Path
-import kotlinx.io.files.SystemFileSystem
 import java.lang.foreign.Arena
 import java.lang.foreign.FunctionDescriptor
 import java.lang.foreign.Linker
 import java.lang.foreign.MemorySegment
 import java.lang.foreign.ValueLayout
 import java.lang.invoke.MethodHandle
+import kotlin.io.path.absolutePathString
+import kotlin.io.path.deleteExisting
+import kotlin.io.path.exists
 import kotlin.math.min
 
 @Suppress("Since15") // We compile against Panama as a preview feature to be compatible with Java 21
@@ -138,11 +140,10 @@ internal class PosixVirtualMemory(
 
     override val fileDescriptor: Int = run {
         if (path == null) return@run VirtualMemory.INVALID_FILE_DESCRIPTOR // This virtual memory block is not file backed
+        val nioPath = java.nio.file.Path.of(path.toString())
         Arena.ofConfined().use { arena ->
-            if (SystemFileSystem.exists(path)) SystemFileSystem.delete(path)
-            SystemFileSystem.sink(path)
-                .close() // Create the file before resolving it's path, because kotlinx.io is a dumb dumb
-            val pathAddress = arena.allocateUtf8String(SystemFileSystem.resolve(path).toString())
+            if (nioPath.exists()) nioPath.deleteExisting()
+            val pathAddress = arena.allocateUtf8String(nioPath.absolutePathString())
             val fd = posixOpen.invokeExact( // @formatter:off
                 pathAddress,                                // const char* path
                 _accessFlags.toPosixOpenFlags() or O_CREAT, // int oflags
