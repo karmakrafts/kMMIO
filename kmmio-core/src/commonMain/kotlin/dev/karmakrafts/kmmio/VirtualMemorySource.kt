@@ -18,16 +18,35 @@ package dev.karmakrafts.kmmio
 
 import kotlinx.io.Buffer
 import kotlinx.io.RawSource
+import kotlin.math.min
 
-private class VirtualMemorySource(
-    private val memory: VirtualMemory, private val size: Long, private val offset: Long
-) : RawSource {
-    override fun close() {
-        TODO("Not yet implemented")
-    }
+private class VirtualMemorySource( // @formatter:off
+    private val memory: VirtualMemory,
+    private val size: Long,
+    private val offset: Long
+) : RawSource { // @formatter:on
+    private var position: Long = 0L
+    private val buffer: ByteArray = ByteArray(8192)
+
+    override fun close() = Unit // no-op: does not own the memory
 
     override fun readAtMostTo(sink: Buffer, byteCount: Long): Long {
-        TODO("Not yet implemented")
+        if (position >= size) return -1L
+
+        var remaining = min(byteCount, size - position)
+        var totalRead = 0L
+        while (remaining > 0L) {
+            val chunk = min(remaining, buffer.size.toLong()).toInt()
+            val read = memory.readBytes(buffer, size = chunk.toLong(), srcOffset = offset + position, dstOffset = 0L)
+            if (read <= 0L) break
+            sink.write(buffer, 0, read.toInt())
+            position += read
+            totalRead += read
+            remaining -= read
+            if (read < chunk) break // guard against partial read
+        }
+        if (totalRead == 0L) return -1L
+        return totalRead
     }
 }
 

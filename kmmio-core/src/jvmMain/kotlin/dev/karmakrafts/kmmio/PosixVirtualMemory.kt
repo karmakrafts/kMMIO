@@ -207,7 +207,7 @@ internal class PosixVirtualMemory(
         _address.reinterpret(_size)
             .asSlice(srcOffset, _size - srcOffset)
             .asByteBuffer()
-            .get(array, dstOffset.toInt(), array.size - dstOffset.toInt())
+            .get(array, dstOffset.toInt(), size.toInt() - dstOffset.toInt())
         return actualSize
     }
 
