@@ -17,11 +17,11 @@
 package dev.karmakrafts.kmmio
 
 import kotlinx.io.files.Path
+import java.lang.foreign.Arena
 import java.lang.foreign.FunctionDescriptor
-import java.lang.foreign.MemoryLayout
+import java.lang.foreign.Linker
 import java.lang.foreign.MemorySegment
-import java.lang.foreign.StructLayout
-import java.lang.foreign.UnionLayout
+import java.lang.foreign.SymbolLookup
 import java.lang.foreign.ValueLayout
 import java.lang.invoke.MethodHandle
 
@@ -34,37 +34,14 @@ internal class WindowsVirtualMemory( // @formatter:off
     mappingFlags: MappingFlags
 ) : AbstractVirtualMemory(initialSize, path, initialAccessFlags, mappingFlags) { // @formatter:on
     companion object { // @formatter:off
-        private val SYSTEM_INFO_S: StructLayout = MemoryLayout.structLayout(
-            ValueLayout.JAVA_SHORT, // WORD wProcessorArchitecture
-            ValueLayout.JAVA_SHORT  // WORD wReserved
-        )
-        private val SYSTEM_INFO_U: UnionLayout = MemoryLayout.unionLayout(
-            ValueLayout.JAVA_INT, // DWORD dwOemId
-            SYSTEM_INFO_S         // DUMMYSTRUCTNAME
-        )
-        private val SYSTEM_INFO: StructLayout = MemoryLayout.structLayout(
-            SYSTEM_INFO_U,          // DUMMYUNIONNAME
-            ValueLayout.JAVA_INT,   // DWORD dwPageSize
-            ValueLayout.ADDRESS,    // LPVOID lpMinimumApplicationAddress
-            ValueLayout.ADDRESS,    // LPVOID lpMaximumApplicationAddress
-            ValueLayout.ADDRESS,    // DWORD_PTR dwActiveProcessorMask
-            ValueLayout.JAVA_INT,   // DWORD dwNumberOfProcessors
-            ValueLayout.JAVA_INT,   // DWORD dwProcessorType
-            ValueLayout.JAVA_INT,   // DWORD dwAllocationGranularity
-            ValueLayout.JAVA_SHORT, // WORD wProcessorLevel
-            ValueLayout.JAVA_SHORT  // WORD wProcessorRevision
-        )
-        private val SECURITY_DESCRIPTOR: StructLayout = MemoryLayout.structLayout(
-            ValueLayout.JAVA_BYTE,  // BYTE Revision
-            ValueLayout.JAVA_BYTE,  // BYTE Sbz1
-            ValueLayout.JAVA_SHORT, // SECURITY_DESCRIPTOR_CONTROL Control
-            ValueLayout.ADDRESS,    // PSID Owner
-            ValueLayout.ADDRESS,    // PSID Group
-            ValueLayout.ADDRESS,    // PACL Sacl
-            ValueLayout.ADDRESS     // PACL Dacl
-        )
+        private val kernelLookup: SymbolLookup = SymbolLookup.libraryLookup("kernel32", Arena.global())
 
-        private val CreateFileMappingW: MethodHandle = getNativeFunction("CreateFileMappingW", FunctionDescriptor.of(ValueLayout.ADDRESS,
+        private fun getKernelFunction(name: String, descriptor: FunctionDescriptor): MethodHandle {
+            val address = kernelLookup.find(name).orElseThrow()
+            return Linker.nativeLinker().downcallHandle(address, descriptor)
+        }
+
+        private val CreateFileMappingW: MethodHandle = getKernelFunction("CreateFileMappingW", FunctionDescriptor.of(ValueLayout.ADDRESS,
             ValueLayout.ADDRESS,  // HANDLE hFile
             ValueLayout.ADDRESS,  // LPSECURITY_ATTRIBUTES lpFileMappingAttributes
             ValueLayout.JAVA_INT, // DWORD flProtect
@@ -72,7 +49,7 @@ internal class WindowsVirtualMemory( // @formatter:off
             ValueLayout.JAVA_INT, // DWORD dwMaximumSizeLow
             ValueLayout.ADDRESS   // LPCWSTR lpName
         ))
-        private val MapViewOfFileEx: MethodHandle = getNativeFunction("MapViewOfFileEx", FunctionDescriptor.of(ValueLayout.ADDRESS,
+        private val MapViewOfFileEx: MethodHandle = getKernelFunction("MapViewOfFileEx", FunctionDescriptor.of(ValueLayout.ADDRESS,
             ValueLayout.ADDRESS,   // HANDLE hFileMappingObject
             ValueLayout.JAVA_INT,  // DWORD dwDesiredAccess
             ValueLayout.JAVA_INT,  // DWORD dwFileOffsetHigh
@@ -80,64 +57,124 @@ internal class WindowsVirtualMemory( // @formatter:off
             ValueLayout.JAVA_LONG, // SIZE_T dwNumberOfBytesToMap
             ValueLayout.ADDRESS    // LPVOID lpBaseAddress
         ))
-        private val UnmapViewOfFile: MethodHandle = getNativeFunction("UnmapViewOfFile", FunctionDescriptor.of(ValueLayout.JAVA_INT,
+        private val UnmapViewOfFile: MethodHandle = getKernelFunction("UnmapViewOfFile", FunctionDescriptor.of(ValueLayout.JAVA_INT,
             ValueLayout.ADDRESS // LPCVOID lpBaseAddress
         ))
-        private val FlushViewOfFile: MethodHandle = getNativeFunction("FlushViewOfFile", FunctionDescriptor.of(ValueLayout.JAVA_INT,
+        private val FlushViewOfFile: MethodHandle = getKernelFunction("FlushViewOfFile", FunctionDescriptor.of(ValueLayout.JAVA_INT,
             ValueLayout.ADDRESS, // LPCVOID lpBaseAddress
             ValueLayout.JAVA_INT // SIZE_T dwNumberOfBytesToFlush
         ))
-        private val VirtualProtect: MethodHandle = getNativeFunction("VirtualProtect", FunctionDescriptor.of(ValueLayout.JAVA_INT,
+        private val VirtualProtect: MethodHandle = getKernelFunction("VirtualProtect", FunctionDescriptor.of(ValueLayout.JAVA_INT,
             ValueLayout.ADDRESS,   // LPVOID lpAddress
             ValueLayout.JAVA_LONG, // SIZE_T dwSize
             ValueLayout.JAVA_INT,  // DWORD flNewProtect
             ValueLayout.ADDRESS    // PDWORD lpfOldProtect
         ))
-        private val VirtualLock: MethodHandle = getNativeFunction("VirtualLock", FunctionDescriptor.of(ValueLayout.JAVA_INT,
+        private val VirtualLock: MethodHandle = getKernelFunction("VirtualLock", FunctionDescriptor.of(ValueLayout.JAVA_INT,
             ValueLayout.ADDRESS,  // LPVOID lpAddress
             ValueLayout.JAVA_LONG // SIZE_T dwSize
         ))
-        private val VirtualUnlock: MethodHandle = getNativeFunction("VirtualUnlock", FunctionDescriptor.of(ValueLayout.JAVA_INT,
+        private val VirtualUnlock: MethodHandle = getKernelFunction("VirtualUnlock", FunctionDescriptor.of(ValueLayout.JAVA_INT,
             ValueLayout.ADDRESS,  // LPVOID lpAddress
             ValueLayout.JAVA_LONG // SIZE_T dwSize
         ))
-        private val CloseHandle: MethodHandle = getNativeFunction("CloseHandle", FunctionDescriptor.of(ValueLayout.JAVA_INT,
+        private val CloseHandle: MethodHandle = getKernelFunction("CloseHandle", FunctionDescriptor.of(ValueLayout.JAVA_INT,
             ValueLayout.ADDRESS // HANDLE hObject
         ))
-        private val InitializeSecurityDescriptor: MethodHandle = getNativeFunction("InitializeSecurityDescriptor",
-            FunctionDescriptor.of(ValueLayout.JAVA_INT,
-                ValueLayout.ADDRESS, // PSECURITY_DESCRIPTOR pSecurityDesciptor
-                ValueLayout.JAVA_INT // DWORD dwRevision
-            ))
-        private val GetSystemInfo: MethodHandle = getNativeFunction("GetSystemInfo", FunctionDescriptor.ofVoid(
-            ValueLayout.ADDRESS // LPSYSTEM_INFO lpSystemInfo
+        private val _open: MethodHandle = getNativeFunction("_open", FunctionDescriptor.of(ValueLayout.JAVA_INT,
+            ValueLayout.ADDRESS,  // const char* path
+            ValueLayout.JAVA_INT, // int oflags
+            ValueLayout.JAVA_INT  // int pmode
+        ))
+        private val _close: MethodHandle = getNativeFunction("_close", FunctionDescriptor.of(ValueLayout.JAVA_INT,
+            ValueLayout.JAVA_INT // int fd
+        ))
+        private val _chsize_s: MethodHandle = getNativeFunction("_chsize_s", FunctionDescriptor.of(ValueLayout.JAVA_INT,
+            ValueLayout.JAVA_INT, // int fd
+            ValueLayout.JAVA_LONG // off_t length
         ))
         private val _get_osfhandle: MethodHandle = getNativeFunction("_get_osfhandle", FunctionDescriptor.of(ValueLayout.ADDRESS,
             ValueLayout.JAVA_INT // int fd
         ))
+
+        private const val PAGE_NOACCESS: Int = 0x01
+        private const val PAGE_READONLY: Int = 0x02
+        private const val PAGE_READWRITE: Int = 0x04
+        private const val PAGE_EXECUTE_READ: Int = 0x20
+        private const val PAGE_EXECUTE_READWRITE: Int = 0x40
+
+        private const val FILE_MAP_READ: Int = 0x04
+        private const val FILE_MAP_WRITE: Int = 0x02
+        private const val FILE_MAP_EXECUTE: Int = 0x20
+        private const val FILE_MAP_ALL_ACCESS: Int = 0x000F001F
+
+        private val INVALID_HANDLE_VALUE: MemorySegment = MemorySegment.ofAddress(-1.toULong().toLong())
+
+        private fun AccessFlags.toPageProtectionFlags(): Int = when {
+            AccessFlags.EXEC in this && AccessFlags.READ in this && AccessFlags.WRITE in this -> PAGE_EXECUTE_READWRITE
+            AccessFlags.EXEC in this && AccessFlags.READ in this -> PAGE_EXECUTE_READ
+            AccessFlags.READ in this && AccessFlags.WRITE in this -> PAGE_READWRITE
+            AccessFlags.READ in this -> PAGE_READONLY
+            else -> PAGE_NOACCESS
+        }
+
+        private fun AccessFlags.toMappingFlags(): Int {
+            var result = when {
+                AccessFlags.READ in this && AccessFlags.WRITE in this -> FILE_MAP_ALL_ACCESS
+                AccessFlags.WRITE in this -> FILE_MAP_WRITE
+                AccessFlags.READ in this -> FILE_MAP_READ
+                else -> 0
+            }
+            if (AccessFlags.EXEC in this) result = result or FILE_MAP_EXECUTE
+            return result
+        }
     } // @formatter:on
 
-    override fun map(): MemorySegment {
-        TODO("Not yet implemented")
+    private lateinit var mappingHandle: MemorySegment
+
+    override fun openFile(name: MemorySegment, flags: Int, mask: Int): Int = _open.invokeExact(name, flags, mask) as Int
+    override fun closeFile(fd: Int): Int = _close.invokeExact(fd) as Int
+    override fun truncateFile(fd: Int, size: Long): Int = _chsize_s.invokeExact(fd, size) as Int
+
+    override fun map() {
+        val hiSize = (_size shr 32) and 0xFFFFFFFF
+        val loSize = _size and 0xFFFFFFFF
+        val handle = if (isFileBacked) {
+            val value = _get_osfhandle.invokeExact(fileDescriptor) as MemorySegment
+            check(value != INVALID_HANDLE_VALUE) { "Could not get backing file handle for VirtualMemory" }
+            value
+        }
+        else INVALID_HANDLE_VALUE
+        val mappingHandle = CreateFileMappingW.invokeExact(
+            handle,
+            MemorySegment.NULL,
+            _accessFlags.toPageProtectionFlags(),
+            hiSize.toInt(),
+            loSize.toInt(),
+            MemorySegment.NULL
+        ) as MemorySegment
+        check(mappingHandle != MemorySegment.NULL) { "Could not create (page)file mapping for VirtualMemory" }
+        val address = MapViewOfFileEx.invokeExact(
+            mappingHandle, _accessFlags.toMappingFlags(), 0, 0, 0L, MemorySegment.NULL
+        ) as MemorySegment
+        check(address != MemorySegment.NULL) { "Could not obtain mapping address for VirtualMemory" }
+        _address = address
+        this.mappingHandle = mappingHandle
     }
 
     override fun unmap() {
-        TODO("Not yet implemented")
+        check((UnmapViewOfFile.invokeExact(_address) as Int) != 0) { "Could not unmap view for VirtualMemory" }
+        check((CloseHandle.invokeExact(mappingHandle) as Int) != 0) { "Could not close mapping for VirtualMemory" }
     }
 
-    override fun sync(flags: SyncFlags): Boolean {
-        TODO("Not yet implemented")
-    }
+    override fun sync(flags: SyncFlags): Boolean = (FlushViewOfFile.invokeExact(_address, flags.value.toInt()) as Int) != 0
 
-    override fun lock(): Boolean {
-        TODO("Not yet implemented")
-    }
+    override fun lock(): Boolean = (VirtualLock.invokeExact(_address, _size) as Int) != 0
 
-    override fun unlock(): Boolean {
-        TODO("Not yet implemented")
-    }
+    override fun unlock(): Boolean = (VirtualUnlock.invokeExact(_address, _size) as Int) != 0
 
-    override fun protect(accessFlags: AccessFlags): Boolean {
-        TODO("Not yet implemented")
+    override fun protect(accessFlags: AccessFlags): Boolean = Arena.ofConfined().use { arena ->
+        val oldProtection = arena.allocate(ValueLayout.JAVA_INT)
+        (VirtualProtect.invokeExact(_address, _size, accessFlags.toPageProtectionFlags(), oldProtection) as Int) != 0
     }
 }

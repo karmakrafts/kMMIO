@@ -19,7 +19,6 @@ package dev.karmakrafts.kmmio
 import kotlinx.io.files.Path
 import java.lang.foreign.Arena
 import java.lang.foreign.FunctionDescriptor
-import java.lang.foreign.Linker
 import java.lang.foreign.MemorySegment
 import java.lang.foreign.ValueLayout
 import java.lang.invoke.MethodHandle
@@ -37,18 +36,6 @@ internal abstract class AbstractVirtualMemory(
     override val mappingFlags: MappingFlags
 ) : VirtualMemory {
     companion object { // @formatter:off
-        private val posixOpen: MethodHandle = getNativeFunction("open", FunctionDescriptor.of(ValueLayout.JAVA_INT,
-            ValueLayout.ADDRESS, // const char* path
-            ValueLayout.JAVA_INT // int oflags
-            // ...
-        ), Linker.Option.firstVariadicArg(2))
-        private val posixClose: MethodHandle = getNativeFunction("close", FunctionDescriptor.of(ValueLayout.JAVA_INT,
-            ValueLayout.JAVA_INT // int fd
-        ))
-        private val ftruncate: MethodHandle = getNativeFunction("ftruncate", FunctionDescriptor.of(ValueLayout.JAVA_INT,
-            ValueLayout.JAVA_INT, // int fd
-            ValueLayout.JAVA_LONG // off_t length
-        ))
         private val memset: MethodHandle = getNativeFunction("memset", FunctionDescriptor.of(ValueLayout.ADDRESS,
             ValueLayout.ADDRESS,  // void* addr
             ValueLayout.JAVA_INT, // int value (& 0xFF)
@@ -67,10 +54,13 @@ internal abstract class AbstractVirtualMemory(
     protected var _accessFlags: AccessFlags = initialAccessFlags
     override val accessFlags: AccessFlags = _accessFlags
 
-    protected var _address: MemorySegment = map()
+    protected lateinit var _address: MemorySegment
     override val address: Long get() = _address.address()
 
-    protected abstract fun map(): MemorySegment
+    protected abstract fun openFile(name: MemorySegment, flags: Int, mask: Int): Int
+    protected abstract fun closeFile(fd: Int): Int
+    protected abstract fun truncateFile(fd: Int, size: Long): Int
+    abstract fun map()
     protected abstract fun unmap()
 
     override val fileDescriptor: Int = run {
@@ -79,14 +69,15 @@ internal abstract class AbstractVirtualMemory(
         if (nioPath.exists()) nioPath.deleteExisting()
         Arena.ofConfined().use { arena ->
             val pathAddress = arena.allocateUtf8String(nioPath.absolutePathString())
-            val fd = posixOpen.invokeExact( // @formatter:off
+            val fd = openFile( // @formatter:off
                 pathAddress,
                 _accessFlags.toPosixOpenFlags() or O_CREAT,
-            ) as Int // @formatter:on
+                _accessFlags.toPosixFileMask()
+            ) // @formatter:on
             check(fd != VirtualMemory.INVALID_FILE_DESCRIPTOR) {
                 "Could not open file for VirtualMemory at $path"
             }
-            (ftruncate.invokeExact(fd, initialSize) as Int).checkPosixResult()
+            truncateFile(fd, initialSize).checkPosixResult()
             fd
         }
     }
@@ -96,10 +87,10 @@ internal abstract class AbstractVirtualMemory(
         unmap()
         if (isFileBacked) {
             // If the mapping is file backed, we need to unmap - resize - remap
-            (ftruncate.invokeExact(fileDescriptor, size) as Int).checkPosixResult()
+            truncateFile(fileDescriptor, size).checkPosixResult()
         }
         _size = size
-        _address = map()
+        map()
         return true
     }
 
@@ -148,7 +139,7 @@ internal abstract class AbstractVirtualMemory(
     override fun close() {
         unmap()
         if (isFileBacked) {
-            (posixClose.invokeExact(fileDescriptor) as Int).checkPosixResult()
+            closeFile(fileDescriptor).checkPosixResult()
         }
     }
 }

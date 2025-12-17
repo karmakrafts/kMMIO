@@ -29,9 +29,7 @@ interface VirtualMemory : AutoCloseable {
     val size: Long
     val accessFlags: AccessFlags
     val mappingFlags: MappingFlags
-
-    val isFileBacked: Boolean
-        get() = fileDescriptor != INVALID_FILE_DESCRIPTOR
+    val isFileBacked: Boolean get() = path != null
 
     fun sync(flags: SyncFlags): Boolean
     fun lock(): Boolean

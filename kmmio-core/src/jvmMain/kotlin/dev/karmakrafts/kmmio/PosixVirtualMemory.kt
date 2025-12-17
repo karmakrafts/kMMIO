@@ -18,6 +18,7 @@ package dev.karmakrafts.kmmio
 
 import kotlinx.io.files.Path
 import java.lang.foreign.FunctionDescriptor
+import java.lang.foreign.Linker
 import java.lang.foreign.MemorySegment
 import java.lang.foreign.ValueLayout
 import java.lang.invoke.MethodHandle
@@ -31,6 +32,18 @@ internal class PosixVirtualMemory( // @formatter:off
     mappingFlags: MappingFlags
 ) : AbstractVirtualMemory(initialSize, path, initialAccessFlags, mappingFlags) { // @formatter:on
     companion object { // @formatter:off
+        private val posixOpen: MethodHandle = getNativeFunction("open", FunctionDescriptor.of(ValueLayout.JAVA_INT,
+            ValueLayout.ADDRESS, // const char* path
+            ValueLayout.JAVA_INT // int oflags
+            // ...
+        ), Linker.Option.firstVariadicArg(2))
+        private val posixClose: MethodHandle = getNativeFunction("close", FunctionDescriptor.of(ValueLayout.JAVA_INT,
+            ValueLayout.JAVA_INT // int fd
+        ))
+        private val ftruncate: MethodHandle = getNativeFunction("ftruncate", FunctionDescriptor.of(ValueLayout.JAVA_INT,
+            ValueLayout.JAVA_INT, // int fd
+            ValueLayout.JAVA_LONG // off_t length
+        ))
         private val mmap: MethodHandle = getNativeFunction("mmap", FunctionDescriptor.of(ValueLayout.ADDRESS,
             ValueLayout.ADDRESS,   // void* addr
             ValueLayout.JAVA_LONG, // size_t length
@@ -63,14 +76,20 @@ internal class PosixVirtualMemory( // @formatter:off
         ))
     } // @formatter:on
 
-    override fun map(): MemorySegment = mmap.invokeExact( // @formatter:off
-        MemorySegment.NULL,
-        _size,
-        _accessFlags.toPosixFlags(),
-        mappingFlags.toPosixFlags(),
-        fileDescriptor,
-        0L
-    ) as MemorySegment // @formatter:on
+    override fun openFile(name: MemorySegment, flags: Int, mask: Int): Int = posixOpen.invokeExact(name, flags, mask) as Int
+    override fun closeFile(fd: Int): Int = posixClose.invokeExact(fd) as Int
+    override fun truncateFile(fd: Int, size: Long): Int = ftruncate.invokeExact(fd, size) as Int
+
+    override fun map() {
+        _address = mmap.invokeExact( // @formatter:off
+            MemorySegment.NULL,
+            _size,
+            _accessFlags.toPosixFlags(),
+            mappingFlags.toPosixFlags(),
+            fileDescriptor,
+            0L
+        ) as MemorySegment // @formatter:on
+    }
 
     override fun unmap() {
         (munmap.invokeExact(_address, _size) as Int).checkPosixResult()
