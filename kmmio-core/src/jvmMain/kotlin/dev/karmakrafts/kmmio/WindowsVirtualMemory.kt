@@ -176,6 +176,11 @@ internal class WindowsVirtualMemory( // @formatter:off
     override fun unlock(): Boolean = (VirtualUnlock.invokeExact(_address, _size) as Int) != 0
 
     override fun protect(accessFlags: AccessFlags): Boolean {
-        return (VirtualProtect.invokeExact(_address, _size, accessFlags.toPageProtectionFlags(), MemorySegment.NULL) as Int) != 0
+        return (VirtualProtect.invokeExact(
+            _address,
+            _size,
+            accessFlags.toPageProtectionFlags(),
+            MemorySegment.NULL
+        ) as Int) != 0
     }
 }

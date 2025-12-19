@@ -48,8 +48,8 @@ internal const val S_IXOTH: Int = 0x01
 
 internal fun AccessFlags.toPosixFileMask(): Int {
     var mask = S_IRUSR or S_IRGRP or S_IROTH
-    if(AccessFlags.WRITE in this) mask = mask or (S_IWUSR or S_IWGRP or S_IWOTH)
-    if(AccessFlags.EXEC in this) mask = mask or (S_IXUSR or S_IXGRP or S_IXOTH)
+    if (AccessFlags.WRITE in this) mask = mask or (S_IWUSR or S_IWGRP or S_IWOTH)
+    if (AccessFlags.EXEC in this) mask = mask or (S_IXUSR or S_IXGRP or S_IXOTH)
     return mask
 }
 
