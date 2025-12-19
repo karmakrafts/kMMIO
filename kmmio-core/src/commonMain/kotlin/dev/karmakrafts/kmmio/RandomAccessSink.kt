@@ -18,4 +18,7 @@ package dev.karmakrafts.kmmio
 
 import kotlinx.io.RawSink
 
+/**
+ * A [kotlinx.io.RawSink] that also supports random access via [RandomAccess].
+ */
 interface RandomAccessSink : RawSink, RandomAccess

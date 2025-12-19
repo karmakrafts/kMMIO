@@ -16,9 +16,12 @@
 
 package dev.karmakrafts.kmmio
 
-import kotlinx.io.RawSource
+import java.lang.foreign.MemorySegment
 
 /**
- * A [kotlinx.io.RawSource] that also supports random access via [RandomAccess].
+ * Views this virtual memory block as a [MemorySegment].
+ *
+ * @return a [MemorySegment] viewing this virtual memory block
  */
-interface RandomAccessSource : RawSource, RandomAccess
+@Suppress("Since15") // We compile against Panama as a preview feature to be compatible with Java 21
+fun VirtualMemory.asSegment(): MemorySegment = MemorySegment.ofAddress(address).reinterpret(size)

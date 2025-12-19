@@ -42,6 +42,19 @@ value class AccessFlags private constructor(internal val value: UByte) {
         val EXEC: AccessFlags = AccessFlags(0x04U)
     }
 
+    /**
+     * Combines these access flags with another set of access flags.
+     *
+     * @param flags the other access flags
+     * @return the combined access flags
+     */
     operator fun plus(flags: AccessFlags): AccessFlags = AccessFlags(value or flags.value)
+
+    /**
+     * Checks if these access flags contain the specified access flags.
+     *
+     * @param flags the access flags to check for
+     * @return `true` if these access flags contain the specified access flags, `false` otherwise
+     */
     operator fun contains(flags: AccessFlags): Boolean = value and flags.value == flags.value
 }

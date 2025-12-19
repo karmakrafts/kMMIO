@@ -43,6 +43,19 @@ value class SyncFlags private constructor(internal val value: UByte) {
         val SYNC: SyncFlags = SyncFlags(0x04U)
     }
 
+    /**
+     * Combines these sync flags with another set of sync flags.
+     *
+     * @param flags the other sync flags
+     * @return the combined sync flags
+     */
     operator fun plus(flags: SyncFlags): SyncFlags = SyncFlags(value or flags.value)
+
+    /**
+     * Checks if these sync flags contain the specified sync flags.
+     *
+     * @param flags the sync flags to check for
+     * @return `true` if these sync flags contain the specified sync flags, `false` otherwise
+     */
     operator fun contains(flags: SyncFlags): Boolean = value and flags.value == flags.value
 }

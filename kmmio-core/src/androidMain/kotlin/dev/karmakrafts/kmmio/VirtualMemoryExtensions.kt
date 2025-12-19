@@ -16,9 +16,12 @@
 
 package dev.karmakrafts.kmmio
 
-import kotlinx.io.RawSource
+import com.sun.jna.Pointer
 
 /**
- * A [kotlinx.io.RawSource] that also supports random access via [RandomAccess].
+ * Get a JNA [Pointer] to the virtual memory at the given [offset].
+ *
+ * @param offset The offset from the start of the virtual memory.
+ * @return A JNA [Pointer] to the virtual memory at the given [offset].
  */
-interface RandomAccessSource : RawSource, RandomAccess
+fun VirtualMemory.getPointer(offset: Long = 0L): Pointer = Pointer.createConstant(address + offset)

@@ -47,6 +47,19 @@ value class MappingFlags private constructor(internal val value: UByte) {
         val SHARED: MappingFlags = MappingFlags(0x04U)
     }
 
+    /**
+     * Combines these mapping flags with another set of mapping flags.
+     *
+     * @param flags the other mapping flags
+     * @return the combined mapping flags
+     */
     operator fun plus(flags: MappingFlags): MappingFlags = MappingFlags(value or flags.value)
+
+    /**
+     * Checks if these mapping flags contain the specified mapping flags.
+     *
+     * @param flags the mapping flags to check for
+     * @return `true` if these mapping flags contain the specified mapping flags, `false` otherwise
+     */
     operator fun contains(flags: MappingFlags): Boolean = value and flags.value == flags.value
 }

@@ -133,5 +133,3 @@ actual fun VirtualMemory( // @formatter:off
     accessFlags: AccessFlags,
     mappingFlags: MappingFlags
 ): VirtualMemory = VirtualMemoryImpl(size, path, accessFlags, mappingFlags) // @formatter:on
-
-fun VirtualMemory.getPointer(offset: Long = 0L): Pointer = Pointer.createConstant(address + offset)
