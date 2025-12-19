@@ -76,6 +76,10 @@ internal class PosixVirtualMemory( // @formatter:off
         ))
     } // @formatter:on
 
+    init {
+        map()
+    }
+
     override fun openFile(name: MemorySegment, flags: Int, mask: Int): Int = posixOpen.invokeExact(name, flags, mask) as Int
     override fun closeFile(fd: Int): Int = posixClose.invokeExact(fd) as Int
     override fun truncateFile(fd: Int, size: Long): Int = ftruncate.invokeExact(fd, size) as Int

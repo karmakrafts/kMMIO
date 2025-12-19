@@ -16,8 +16,17 @@
 
 package dev.karmakrafts.kmmio
 
-import kotlinx.cinterop.COpaquePointer
-import kotlinx.cinterop.ExperimentalForeignApi
+import platform.posix.O_RDONLY
+import platform.posix.O_RDWR
+import platform.posix.O_WRONLY
 
-@OptIn(ExperimentalForeignApi::class)
-expect fun VirtualMemory.getPointer(): COpaquePointer
+internal fun AccessFlags.toPosixOpenFlags(): Int = when {
+    AccessFlags.READ in this && AccessFlags.WRITE in this -> O_RDWR
+    this == AccessFlags.READ -> O_RDONLY
+    this == AccessFlags.WRITE -> O_WRONLY
+    else -> error("Unsupported access flags in VirtualMemory: 0x${value.toHexString()}")
+}
+
+internal fun Int.checkPosixResult() {
+    check(this == 0) { "Function did not return successfully: error 0x${toHexString()}" }
+}

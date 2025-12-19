@@ -34,8 +34,10 @@ configureJava(libs.versions.java)
 
 kotlin {
     jvm()
-    androidTarget {
-        publishLibraryVariants("debug", "release")
+    androidLibrary {
+        namespace = "$group.${rootProject.name}"
+        compileSdk = libs.versions.androidCompileSDK.get().toInt()
+        minSdk = libs.versions.androidMinimalSDK.get().toInt()
     }
     androidNativeX64()
     androidNativeX86()
@@ -94,43 +96,12 @@ kotlin {
     }
 }
 
-android {
-    namespace = "$group.${rootProject.name}"
-    compileSdk = libs.versions.androidCompileSDK.get().toInt()
-    defaultConfig {
-        minSdk = libs.versions.androidMinimalSDK.get().toInt()
-    }
-}
-
-dokka {
-    moduleName = project.name
-    pluginsConfiguration {
-        html {
-            footerMessage = "&copy; ${ZonedDateTime.now().year} Karma Krafts"
-        }
-    }
-}
-
-val dokkaJar by tasks.registering(Jar::class) {
-    group = "dokka"
-    from(tasks.dokkaGeneratePublicationHtml.flatMap { it.outputDirectory })
-    archiveClassifier.set("javadoc")
-}
-
 tasks {
     withType<JavaCompile> {
         options.compilerArgs.add("--enable-preview")
     }
     withType<JavaExec> {
         jvmArgs("--enable-preview")
-    }
-    System.getProperty("publishDocs.root")?.let { docsDir ->
-        register("publishDocs", Copy::class) {
-            dependsOn(dokkaJar)
-            mustRunAfter(dokkaJar)
-            from(zipTree(dokkaJar.get().outputs.files.first()))
-            into("$docsDir/${project.name}")
-        }
     }
 }
 
@@ -140,7 +111,4 @@ publishing {
         description = "Lightweight memory mapped IO for Kotlin Multiplatform on JVM, Android and native",
         url = "https://git.karmakrafts.dev/kk/kMMIO"
     )
-    publications.withType<MavenPublication>().configureEach {
-        artifact(dokkaJar)
-    }
 }

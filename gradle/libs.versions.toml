@@ -7,8 +7,8 @@ androidCompileSDK = "36"
 androidMinimalSDK = "28"
 
 kmmio = "2.0.0"
-karmaConventions = "1.8.2" # https://github.com/karmakrafts/karma-conventions/tags
-kotlin = "2.2.21" # https://github.com/JetBrains/kotlin/releases
+karmaConventions = "1.9.4" # https://github.com/karmakrafts/karma-conventions/tags
+kotlin = "2.3.0" # https://github.com/JetBrains/kotlin/releases
 kotlinxIo = "0.8.2" # https://github.com/Kotlin/kotlinx-io/releases
 dokka = "2.1.0" # https://github.com/Kotlin/dokka/releases
 gradleNexus = "2.0.0" # https://github.com/gradle-nexus/publish-plugin/releases
@@ -23,7 +23,7 @@ jna = { module = "net.java.dev.jna:jna", version.ref = "jna" }
 
 [plugins]
 
-android-library = { id = "com.android.library", version.ref = "androidGradle" }
+android-library = { id = "com.android.kotlin.multiplatform.library", version.ref = "androidGradle" }
 karmaConventions = { id = "dev.karmakrafts.conventions.karma-conventions", version.ref = "karmaConventions" }
 kotlin-multiplatform = { id = "org.jetbrains.kotlin.multiplatform", version.ref = "kotlin" }
 dokka = { id = "org.jetbrains.dokka", version.ref = "dokka" }

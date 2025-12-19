@@ -19,9 +19,6 @@ package dev.karmakrafts.kmmio
 import platform.posix.MAP_ANON
 import platform.posix.MAP_PRIVATE
 import platform.posix.MAP_SHARED
-import platform.posix.O_RDONLY
-import platform.posix.O_RDWR
-import platform.posix.O_WRONLY
 import platform.posix.PROT_EXEC
 import platform.posix.PROT_NONE
 import platform.posix.PROT_READ
@@ -35,21 +32,10 @@ internal fun AccessFlags.toPosixFlags(): Int {
     return result
 }
 
-internal fun AccessFlags.toPosixOpenFlags(): Int = when {
-    AccessFlags.READ in this && AccessFlags.WRITE in this -> O_RDWR
-    this == AccessFlags.READ -> O_RDONLY
-    this == AccessFlags.WRITE -> O_WRONLY
-    else -> error("Unsupported access flags in VirtualMemory: 0x${value.toHexString()}")
-}
-
 internal fun MappingFlags.toPosixFlags(): Int {
     var result = 0
     if (MappingFlags.ANON in this) result = result or MAP_ANON
     if (MappingFlags.SHARED in this) result = result or MAP_SHARED
     if (MappingFlags.PRIVATE in this) result = result or MAP_PRIVATE
     return result
-}
-
-internal fun Int.checkPosixResult() {
-    check(this == 0) { "Function did not return successfully: error 0x${toHexString()}" }
 }

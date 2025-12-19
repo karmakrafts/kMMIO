@@ -25,12 +25,12 @@ actual fun VirtualMemory( // @formatter:off
     accessFlags: AccessFlags,
     mappingFlags: MappingFlags
 ): VirtualMemory { // @formatter:on
-    return (if (isWindows) {
+    return if (isWindows) {
         WindowsVirtualMemory(size, path, accessFlags, mappingFlags)
     }
     else {
         PosixVirtualMemory(size, path, accessFlags, mappingFlags)
-    }).apply { map() }
+    }
 }
 
 @Suppress("Since15") // We compile against Panama as a preview feature to be compatible with Java 21

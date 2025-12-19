@@ -60,7 +60,7 @@ internal abstract class AbstractVirtualMemory(
     protected abstract fun openFile(name: MemorySegment, flags: Int, mask: Int): Int
     protected abstract fun closeFile(fd: Int): Int
     protected abstract fun truncateFile(fd: Int, size: Long): Int
-    abstract fun map()
+    protected abstract fun map()
     protected abstract fun unmap()
 
     override val fileDescriptor: Int = run {

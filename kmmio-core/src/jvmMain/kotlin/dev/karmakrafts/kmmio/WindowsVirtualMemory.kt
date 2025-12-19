@@ -61,8 +61,8 @@ internal class WindowsVirtualMemory( // @formatter:off
             ValueLayout.ADDRESS // LPCVOID lpBaseAddress
         ))
         private val FlushViewOfFile: MethodHandle = getKernelFunction("FlushViewOfFile", FunctionDescriptor.of(ValueLayout.JAVA_INT,
-            ValueLayout.ADDRESS, // LPCVOID lpBaseAddress
-            ValueLayout.JAVA_INT // SIZE_T dwNumberOfBytesToFlush
+            ValueLayout.ADDRESS,  // LPCVOID lpBaseAddress
+            ValueLayout.JAVA_LONG // SIZE_T dwNumberOfBytesToFlush
         ))
         private val VirtualProtect: MethodHandle = getKernelFunction("VirtualProtect", FunctionDescriptor.of(ValueLayout.JAVA_INT,
             ValueLayout.ADDRESS,   // LPVOID lpAddress
@@ -132,13 +132,15 @@ internal class WindowsVirtualMemory( // @formatter:off
 
     private lateinit var mappingHandle: MemorySegment
 
+    init {
+        map()
+    }
+
     override fun openFile(name: MemorySegment, flags: Int, mask: Int): Int = _open.invokeExact(name, flags, mask) as Int
     override fun closeFile(fd: Int): Int = _close.invokeExact(fd) as Int
     override fun truncateFile(fd: Int, size: Long): Int = _chsize_s.invokeExact(fd, size) as Int
 
     override fun map() {
-        val hiSize = (_size shr 32) and 0xFFFFFFFF
-        val loSize = _size and 0xFFFFFFFF
         val handle = if (isFileBacked) {
             val value = _get_osfhandle.invokeExact(fileDescriptor) as MemorySegment
             check(value != INVALID_HANDLE_VALUE) { "Could not get backing file handle for VirtualMemory" }
@@ -149,8 +151,8 @@ internal class WindowsVirtualMemory( // @formatter:off
             handle,
             MemorySegment.NULL,
             _accessFlags.toPageProtectionFlags(),
-            hiSize.toInt(),
-            loSize.toInt(),
+            ((_size shr 32) and 0xFFFFFFFF).toInt(),
+            (_size and 0xFFFFFFFF).toInt(),
             MemorySegment.NULL
         ) as MemorySegment
         check(mappingHandle != MemorySegment.NULL) { "Could not create (page)file mapping for VirtualMemory" }
@@ -167,14 +169,13 @@ internal class WindowsVirtualMemory( // @formatter:off
         check((CloseHandle.invokeExact(mappingHandle) as Int) != 0) { "Could not close mapping for VirtualMemory" }
     }
 
-    override fun sync(flags: SyncFlags): Boolean = (FlushViewOfFile.invokeExact(_address, flags.value.toInt()) as Int) != 0
+    override fun sync(flags: SyncFlags): Boolean = (FlushViewOfFile.invokeExact(_address, _size) as Int) != 0
 
     override fun lock(): Boolean = (VirtualLock.invokeExact(_address, _size) as Int) != 0
 
     override fun unlock(): Boolean = (VirtualUnlock.invokeExact(_address, _size) as Int) != 0
 
-    override fun protect(accessFlags: AccessFlags): Boolean = Arena.ofConfined().use { arena ->
-        val oldProtection = arena.allocate(ValueLayout.JAVA_INT)
-        (VirtualProtect.invokeExact(_address, _size, accessFlags.toPageProtectionFlags(), oldProtection) as Int) != 0
+    override fun protect(accessFlags: AccessFlags): Boolean {
+        return (VirtualProtect.invokeExact(_address, _size, accessFlags.toPageProtectionFlags(), MemorySegment.NULL) as Int) != 0
     }
 }
