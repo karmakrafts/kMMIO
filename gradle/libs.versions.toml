@@ -6,7 +6,7 @@ androidGradle = "8.12.3" # https://developer.android.com/reference/tools/gradle-
 androidCompileSDK = "36"
 androidMinimalSDK = "28"
 
-kmmio = "2.0.0"
+kmmio = "2.0.1"
 karmaConventions = "1.9.4" # https://github.com/karmakrafts/karma-conventions/tags
 kotlin = "2.3.0" # https://github.com/JetBrains/kotlin/releases
 kotlinxIo = "0.8.2" # https://github.com/Kotlin/kotlinx-io/releases
