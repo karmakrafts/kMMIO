@@ -16,6 +16,7 @@
 
 @file:OptIn(ExperimentalKotlinGradlePluginApi::class)
 
+import com.android.build.api.dsl.KotlinMultiplatformAndroidCompilation
 import dev.karmakrafts.conventions.asAAR
 import dev.karmakrafts.conventions.configureJava
 import dev.karmakrafts.conventions.defaultDokkaConfig
@@ -63,7 +64,7 @@ kotlin {
         common {
             group("jvmAndAndroid") {
                 withJvm()
-                withAndroidTarget()
+                withCompilations { it is KotlinMultiplatformAndroidCompilation }
             }
             group("native") {
                 group("posix") { // All non-Windows OSs can use mmap no problem
