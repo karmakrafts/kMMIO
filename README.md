@@ -43,9 +43,9 @@ kotlin {
 
 ```kotlin
 fun main() {
-    MemoryRegion.map(path, AccessFlags.READ + AccessFlags.WRITE).use {
-        it.asSource() // Consume data through a kotlinx.io.Source
-        it.asSink() // Produce data through a kotlinx.io.Sink
+    VirtualMemory(4096, path).use {
+        it.source() // Consume data through a kotlinx.io.Source
+        it.sink() // Produce data through a kotlinx.io.Sink
     }
 }
 ```
