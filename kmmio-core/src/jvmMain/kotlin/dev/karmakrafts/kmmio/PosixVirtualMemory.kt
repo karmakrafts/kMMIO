@@ -33,9 +33,9 @@ internal class PosixVirtualMemory( // @formatter:off
 ) : AbstractVirtualMemory(initialSize, path, initialAccessFlags, mappingFlags) { // @formatter:on
     companion object { // @formatter:off
         private val posixOpen: MethodHandle = getNativeFunction("open", FunctionDescriptor.of(ValueLayout.JAVA_INT,
-            ValueLayout.ADDRESS, // const char* path
-            ValueLayout.JAVA_INT // int oflags
-            // ...
+            ValueLayout.ADDRESS,  // const char* path
+            ValueLayout.JAVA_INT, // int oflags
+            ValueLayout.JAVA_INT  // int mask
         ), Linker.Option.firstVariadicArg(2))
         private val posixClose: MethodHandle = getNativeFunction("close", FunctionDescriptor.of(ValueLayout.JAVA_INT,
             ValueLayout.JAVA_INT // int fd
