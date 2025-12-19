@@ -18,9 +18,9 @@
 
 import dev.karmakrafts.conventions.asAAR
 import dev.karmakrafts.conventions.configureJava
+import dev.karmakrafts.conventions.defaultDokkaConfig
 import dev.karmakrafts.conventions.setProjectInfo
 import org.jetbrains.kotlin.gradle.ExperimentalKotlinGradlePluginApi
-import java.time.ZonedDateTime
 
 plugins {
     alias(libs.plugins.kotlin.multiplatform)
@@ -31,6 +31,7 @@ plugins {
 }
 
 configureJava(libs.versions.java)
+defaultDokkaConfig()
 
 kotlin {
     jvm()
