@@ -1,5 +1,5 @@
 /*
- * Copyright 2025 Karma Krafts
+ * Copyright 2026 Karma Krafts
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -13,8 +13,6 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-
-enableFeaturePreview("TYPESAFE_PROJECT_ACCESSORS")
 
 rootProject.name = "kmmio"
 
@@ -42,4 +40,5 @@ plugins {
     id("org.gradle.toolchains.foojay-resolver") version "1.0.0"
 }
 
+enableFeaturePreview("TYPESAFE_PROJECT_ACCESSORS")
 include("kmmio-core")

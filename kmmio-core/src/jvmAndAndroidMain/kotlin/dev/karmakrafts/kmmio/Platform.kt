@@ -1,5 +1,5 @@
 /*
- * Copyright 2025 Karma Krafts
+ * Copyright 2026 Karma Krafts
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -16,5 +16,5 @@
 
 package dev.karmakrafts.kmmio
 
-internal val isWindows: Boolean = "win" in System.getProperty("os.name").lowercase()
-internal val isMacos: Boolean = "mac" in System.getProperty("os.name").lowercase()
+internal val isWindows: Boolean = System.getProperty("os.name")?.lowercase()?.let { osName -> "win" in osName } == true
+internal val isMacos: Boolean = System.getProperty("os.name")?.lowercase()?.let { osName -> "mac" in osName } == true

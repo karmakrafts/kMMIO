@@ -5,7 +5,7 @@
 )](https://git.karmakrafts.dev/kk/kmmio/-/packages)
 [![](https://img.shields.io/maven-metadata/v?metadataUrl=https%3A%2F%2Fcentral.sonatype.com%2Frepository%2Fmaven-snapshots%2Fdev%2Fkarmakrafts%2Fkmmio%2Fkmmio-core%2Fmaven-metadata.xml
 )](https://git.karmakrafts.dev/kk/kmmio/-/packages)
-[![](https://img.shields.io/badge/2.3.0-blue?logo=kotlin&label=kotlin)](https://kotlinlang.org/)
+[![](https://img.shields.io/badge/2.3.20--Beta2-blue?logo=kotlin&label=kotlin)](https://kotlinlang.org/)
 [![](https://img.shields.io/badge/documentation-black?logo=kotlin)](https://docs.karmakrafts.dev/kmmio-core)
 
 Lightweight memory mapped IO for Kotlin Multiplatform on JVM, Android and native.  
