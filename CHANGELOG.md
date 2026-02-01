@@ -1,5 +1,7 @@
 ## [Unreleased]
 
+## [2.1.1]
+
 ### Changed
 
 - Updated Karma Conventions to 1.10.17
