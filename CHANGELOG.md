@@ -4,6 +4,10 @@
 
 - Updated Karma Conventions to 1.10.17
 
+### Fixed
+
+- Fixed Trivy path in CI configuration due to faulty runner disk
+
 ## [2.1.0]
 
 ### Added
