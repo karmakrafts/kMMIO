@@ -4,7 +4,7 @@ java = "21"
 
 androidGradle = "9.0.0" # https://developer.android.com/reference/tools/gradle-api
 kmmio = "2.1.1"
-karmaConventions = "1.10.16" # https://github.com/karmakrafts/karma-conventions/tags
+karmaConventions = "1.10.17" # https://github.com/karmakrafts/karma-conventions/tags
 kotlin = "2.3.20-Beta2" # https://github.com/JetBrains/kotlin/releases
 kotlinxIo = "0.8.2" # https://github.com/Kotlin/kotlinx-io/releases
 dokka = "2.2.0-Beta" # https://github.com/Kotlin/dokka/releases

@@ -41,7 +41,7 @@ kotlin {
     defaultCompilerOptions()
     withSourcesJar()
     withJvm()
-    withAndroidLibrary("$group.${rootProject.name}")
+    withAndroidLibrary("$group.core")
     withNative()
     applyDefaultHierarchyTemplate {
         common {

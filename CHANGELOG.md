@@ -3,6 +3,7 @@
 ### Changed
 
 - Updated Karma Conventions to 1.10.17
+- Changed Android namespace from dev.karmakrafts.kmmio.kmmio-core to dev.karmakrafts.kmmio.core
 
 ### Fixed
 
