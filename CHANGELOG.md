@@ -1,5 +1,7 @@
 ## [Unreleased]
 
+## [2.1.0]
+
 ### Added
 
 - Added CHANGELOG.md and automatic release notes
