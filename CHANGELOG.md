@@ -1,5 +1,7 @@
 ## [Unreleased]
 
+## [2.2.1]
+
 ### Changed
 
 - Updated Gradle to 9.5.0
