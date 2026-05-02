@@ -1,5 +1,13 @@
 ## [Unreleased]
 
+### Changed
+
+- Updated Gradle to 9.5.0
+- Updated Kotlin to 2.3.21
+- Updated Karma Conventions to 1.16.1
+- Updated Dokka to 2.2.0
+- Updated Android Gradle to 9.2.0
+
 ## [2.2.0]
 
 ### Changed
