@@ -1,5 +1,7 @@
 ## [Unreleased]
 
+## [2.2.2]
+
 ### Changed
 
 - Updated Karma Conventions to 1.16.3
