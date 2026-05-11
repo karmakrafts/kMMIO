@@ -1,5 +1,11 @@
 ## [Unreleased]
 
+### Changed
+
+- Updated Karma Conventions to 1.16.3
+- Updated Android Gradle to 9.2.1
+- Fix deprecation of `apply<T>()` in root buildscript
+
 ## [2.2.1]
 
 ### Changed
