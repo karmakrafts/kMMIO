@@ -1,5 +1,12 @@
 ## [Unreleased]
 
+### Changed
+
+- Updated Gradle to 9.5.1
+- Updated Kotlin to 2.4.0
+- Updated Karma Conventions to 1.17.0
+- Updated JNA to 5.19.0
+
 ## [2.2.2]
 
 ### Changed
