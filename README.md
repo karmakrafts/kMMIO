@@ -8,6 +8,10 @@
 [![](https://img.shields.io/badge/2.4.0-blue?logo=kotlin&label=kotlin)](https://kotlinlang.org/)
 [![](https://img.shields.io/badge/documentation-black?logo=kotlin)](https://docs.karmakrafts.dev/kmmio-core)
 
+![](https://img.shields.io/badge/-JVM-blue?logo=kotlin&labelColor=black)
+![](https://img.shields.io/badge/-Android-green?logo=kotlin&labelColor=black)
+![](https://img.shields.io/badge/-Native-lightgray?logo=kotlin&labelColor=black)
+
 Lightweight memory mapped IO for Kotlin Multiplatform on JVM, Android and native.  
 If you need random access on big files, this is the library you're looking for!
 
