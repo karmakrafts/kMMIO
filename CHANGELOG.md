@@ -1,5 +1,13 @@
 ## [Unreleased]
 
+### Changed
+
+- Updated to Gradle 9.6.1
+- Updated to Karma Conventions 1.18.3
+- Updated to kotlinx.io 0.9.1
+- Updated to JNA 5.19.1
+- Migrated to NMCP based Maven Central publishing
+
 ## [2.3.0]
 
 ### Changed

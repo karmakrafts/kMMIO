@@ -14,6 +14,8 @@
  * limitations under the License.
  */
 
+import java.time.Duration
+
 rootProject.name = "kmmio"
 
 pluginManagement {
@@ -38,6 +40,17 @@ dependencyResolutionManagement {
 
 plugins {
     id("org.gradle.toolchains.foojay-resolver") version "1.0.0"
+    id("com.gradleup.nmcp.settings") version "1.6.1"
+}
+
+nmcpSettings {
+    providers.environmentVariable("OSSRH_USERNAME").orNull?.let { username ->
+        centralPortal {
+            this.username = username
+            password = providers.environmentVariable("OSSRH_PASSWORD").get()
+            validationTimeout = Duration.ofMinutes(30)
+        }
+    }
 }
 
 enableFeaturePreview("TYPESAFE_PROJECT_ACCESSORS")

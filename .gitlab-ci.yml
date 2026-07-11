@@ -70,8 +70,8 @@ update_changelog:
       sed -i '' "s/^## \[Unreleased\]/## [Unreleased]\\
       \\
       ## [$CI_COMMIT_TAG]/" CHANGELOG.md
-      git config user.name "GitLab CI"
-      git config user.email "gitlab-ci@example.com"
+      git config user.name "Kodeebot"
+      git config user.email "kodeebot@karmakrafts.dev"
       git add CHANGELOG.md
       git commit -m "[skip-ci] Update changelog for next release"
       git push https://gitlab-ci-token:${CI_PUSH_TOKEN}@git.karmakrafts.dev/kk/kmmio.git
@@ -121,13 +121,21 @@ build:
 
 # ------------------------------ Publish
 
-publish:maven:
+publish:snapshot:maven:
   stage: publish
   rules:
     - *if-main
+  script:
+    - ./gradlew publishAllPublicationsToGitLabRepository publishAggregationToCentralSnapshots
+  tags:
+    - macos
+
+publish:release:maven:
+  stage: publish
+  rules:
     - *if-release
   script:
-    - ./gradlew publishAllPublicationsToGitLabRepository publishToSonatype closeAndReleaseStagingRepositories
+    - ./gradlew publishAllPublicationsToGitLabRepository publishAggregationToCentralPortal
   tags:
     - macos
 
