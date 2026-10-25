@@ -108,39 +108,149 @@ security:
 
 # ------------------------------ Tests
 
-test:linux:
+test:android:arm64:
   stage: test
   interruptible: true
   rules:
     - *if-merge-request
     - *if-main
   script:
-    - ./gradlew linuxX64Test jvmTest
+    - ./gradlew clean pixel6Api36AndroidDeviceTest --stacktrace
+  artifacts:
+    when: always
+    reports:
+      junit:
+        - kmmio-core/build/outputs/androidTest-results/managedDevice/**/TEST-*.xml
+  tags:
+    - macos
+    - arm64
+
+test:linux:amd64:
+  stage: test
+  interruptible: true
+  rules:
+    - *if-merge-request
+    - *if-main
+  script:
+    - ./gradlew clean linuxX64Test linuxArm64TestBinaries jvmTest --stacktrace
+  artifacts:
+    name: "kmmio-tests-$CI_COMMIT_REF_SLUG"
+    when: always
+    paths:
+      - kmmio-core/build/bin/linuxArm64/debugTest/test.kexe
+    expire_in: 1 days
+    reports:
+      junit:
+        - kmmio-core/build/test-results/**/TEST-*.xml
   tags:
     - linux
     - shell
     - amd64
 
-test:macos:
+test:linux:arm64:
+  stage: test
+  interruptible: true
+  needs:
+    - test:linux:amd64
+  dependencies:
+    - test:linux:amd64
+  rules:
+    - *if-merge-request
+    - *if-main
+  script:
+    - chmod +x kmmio-core/build/bin/linuxArm64/debugTest/test.kexe
+    - ./gradlew linuxArm64StandaloneTest jvmTest --stacktrace
+  artifacts:
+    when: always
+    reports:
+      junit:
+        - kmmio-core/build/test-results/**/TEST-*.xml
+  tags:
+    - linux
+    - docker
+    - arm64
+
+test:macos:arm64:
   stage: test
   interruptible: true
   rules:
     - *if-merge-request
     - *if-main
   script:
-    - ./gradlew macosArm64Test jvmTest
+    - ./gradlew clean macosArm64Test jvmTest --stacktrace
+  artifacts:
+    when: always
+    reports:
+      junit:
+        - kmmio-core/build/test-results/**/TEST-*.xml
   tags:
     - macos
     - arm64
 
-test:windows:
+test:ios:arm64:
   stage: test
   interruptible: true
   rules:
     - *if-merge-request
     - *if-main
   script:
-    - ./gradlew mingwX64Test jvmTest
+    - ./gradlew clean iosSimulatorArm64Test --stacktrace
+  artifacts:
+    when: always
+    reports:
+      junit:
+        - kmmio-core/build/test-results/**/TEST-*.xml
+  tags:
+    - macos
+    - arm64
+
+test:tvos:arm64:
+  stage: test
+  interruptible: true
+  rules:
+    - *if-merge-request
+    - *if-main
+  script:
+    - ./gradlew clean tvosSimulatorArm64Test --stacktrace
+  artifacts:
+    when: always
+    reports:
+      junit:
+        - kmmio-core/build/test-results/**/TEST-*.xml
+  tags:
+    - macos
+    - arm64
+
+test:watchos:arm64:
+  stage: test
+  interruptible: true
+  rules:
+    - *if-merge-request
+    - *if-main
+  script:
+    - ./gradlew clean watchosSimulatorArm64Test --stacktrace
+  artifacts:
+    when: always
+    reports:
+      junit:
+        - kmmio-core/build/test-results/**/TEST-*.xml
+  tags:
+    - macos
+    - arm64
+
+test:windows:amd64:
+  stage: test
+  interruptible: true
+  rules:
+    - *if-merge-request
+    - *if-main
+  script:
+    - ./gradlew clean mingwX64Test jvmTest --stacktrace
+  artifacts:
+    when: always
+    reports:
+      junit:
+        - kmmio-core/build/test-results/**/TEST-*.xml
   tags:
     - windows
     - amd64
