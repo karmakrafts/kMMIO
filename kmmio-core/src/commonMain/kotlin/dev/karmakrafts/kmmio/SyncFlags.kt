@@ -23,24 +23,24 @@ import kotlin.jvm.JvmInline
  * calling [VirtualMemory.sync].
  */
 @JvmInline
-value class SyncFlags private constructor(internal val value: UByte) {
-    companion object {
+public value class SyncFlags private constructor(internal val value: UByte) {
+    public companion object {
         /**
          * Schedules an update and immediately returns,
          * not waiting for the update to complete.
          */
-        val ASYNC: SyncFlags = SyncFlags(0x01U)
+        public val ASYNC: SyncFlags = SyncFlags(0x01U)
 
         /**
          * Invalidate other mappings of the underlying file
          * to update the newly written contents.
          */
-        val INVALIDATE: SyncFlags = SyncFlags(0x02U)
+        public val INVALIDATE: SyncFlags = SyncFlags(0x02U)
 
         /**
          * Schedules an update and waits for its completion.
          */
-        val SYNC: SyncFlags = SyncFlags(0x04U)
+        public val SYNC: SyncFlags = SyncFlags(0x04U)
     }
 
     /**
@@ -49,7 +49,7 @@ value class SyncFlags private constructor(internal val value: UByte) {
      * @param flags the other sync flags
      * @return the combined sync flags
      */
-    operator fun plus(flags: SyncFlags): SyncFlags = SyncFlags(value or flags.value)
+    public operator fun plus(flags: SyncFlags): SyncFlags = SyncFlags(value or flags.value)
 
     /**
      * Checks if these sync flags contain the specified sync flags.
@@ -57,5 +57,5 @@ value class SyncFlags private constructor(internal val value: UByte) {
      * @param flags the sync flags to check for
      * @return `true` if these sync flags contain the specified sync flags, `false` otherwise
      */
-    operator fun contains(flags: SyncFlags): Boolean = value and flags.value == flags.value
+    public operator fun contains(flags: SyncFlags): Boolean = value and flags.value == flags.value
 }

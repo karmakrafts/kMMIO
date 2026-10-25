@@ -66,5 +66,5 @@ private class VirtualMemorySource( // @formatter:off
  * @param offset the offset in the virtual memory block to start reading from
  * @return the new [RandomAccessSource]
  */
-fun VirtualMemory.source(size: Long = this.size, offset: Long = 0L): RandomAccessSource =
+public fun VirtualMemory.source(size: Long = this.size, offset: Long = 0L): RandomAccessSource =
     VirtualMemorySource(this, size, offset)

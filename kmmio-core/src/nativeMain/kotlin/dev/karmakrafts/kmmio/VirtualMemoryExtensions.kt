@@ -27,6 +27,6 @@ import kotlinx.cinterop.toCPointer
  * @throws IllegalStateException If the pointer could not be obtained.
  */
 @OptIn(ExperimentalForeignApi::class)
-fun VirtualMemory.getPointer(): COpaquePointer = requireNotNull(address.toCPointer()) {
+public fun VirtualMemory.getPointer(): COpaquePointer = requireNotNull(address.toCPointer()) {
     "Could not obtain pointer to VirtualMemory"
 }

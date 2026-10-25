@@ -21,4 +21,4 @@ import kotlinx.io.RawSource
 /**
  * A [kotlinx.io.RawSource] that also supports random access via [RandomAccess].
  */
-interface RandomAccessSource : RawSource, RandomAccess
+public interface RandomAccessSource : RawSource, RandomAccess

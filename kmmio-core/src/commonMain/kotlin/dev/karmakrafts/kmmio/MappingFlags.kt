@@ -22,20 +22,20 @@ import kotlin.jvm.JvmInline
  * The type of mapping created for a [VirtualMemory].
  */
 @JvmInline
-value class MappingFlags private constructor(internal val value: UByte) {
-    companion object {
+public value class MappingFlags private constructor(internal val value: UByte) {
+    public companion object {
         /**
          * A mapping which is not backed by any file.
          * May be used in conjunction with [SHARED].
          */
-        val ANON: MappingFlags = MappingFlags(0x01U)
+        public val ANON: MappingFlags = MappingFlags(0x01U)
 
         /**
          * A mapping which is effectively copy-on-write.
          * Updates the mapped memory are not made visible
          * to other processes.
          */
-        val PRIVATE: MappingFlags = MappingFlags(0x02U)
+        public val PRIVATE: MappingFlags = MappingFlags(0x02U)
 
         /**
          * A mapping which may be shared between two
@@ -43,7 +43,7 @@ value class MappingFlags private constructor(internal val value: UByte) {
          * to be updated in the other processes virtual address spaces
          * when being written to.
          */
-        val SHARED: MappingFlags = MappingFlags(0x04U)
+        public val SHARED: MappingFlags = MappingFlags(0x04U)
     }
 
     /**
@@ -52,7 +52,7 @@ value class MappingFlags private constructor(internal val value: UByte) {
      * @param flags the other mapping flags
      * @return the combined mapping flags
      */
-    operator fun plus(flags: MappingFlags): MappingFlags = MappingFlags(value or flags.value)
+    public operator fun plus(flags: MappingFlags): MappingFlags = MappingFlags(value or flags.value)
 
     /**
      * Checks if these mapping flags contain the specified mapping flags.
@@ -60,5 +60,5 @@ value class MappingFlags private constructor(internal val value: UByte) {
      * @param flags the mapping flags to check for
      * @return `true` if these mapping flags contain the specified mapping flags, `false` otherwise
      */
-    operator fun contains(flags: MappingFlags): Boolean = value and flags.value == flags.value
+    public operator fun contains(flags: MappingFlags): Boolean = value and flags.value == flags.value
 }

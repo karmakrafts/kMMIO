@@ -50,6 +50,7 @@ configureDokka {
 
 kotlin {
     defaultCompilerOptions()
+    explicitApi()
     withSourcesJar()
     withJvm()
     withAndroidLibrary("$group.core") {

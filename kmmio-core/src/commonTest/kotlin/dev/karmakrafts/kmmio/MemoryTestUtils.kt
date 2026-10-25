@@ -35,7 +35,6 @@ internal fun withTemporaryFile(block: (Path) -> Unit) {
     }
 }
 
-internal fun readFileBytes(path: Path): ByteArray =
-    SystemFileSystem.source(path).buffered().use { it.readByteArray() }
+internal fun readFileBytes(path: Path): ByteArray = SystemFileSystem.source(path).buffered().use { it.readByteArray() }
 
 internal expect fun assertPlatformMemoryView(memory: VirtualMemory)

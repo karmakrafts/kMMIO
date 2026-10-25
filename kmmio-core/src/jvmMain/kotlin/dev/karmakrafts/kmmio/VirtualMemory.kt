@@ -21,7 +21,7 @@ import kotlinx.io.files.Path
 @PublishedApi
 internal actual val isSharedMemoryAvailable: Boolean = true
 
-actual fun VirtualMemory( // @formatter:off
+public actual fun VirtualMemory( // @formatter:off
     size: Long,
     path: Path?,
     accessFlags: AccessFlags,

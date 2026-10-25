@@ -68,5 +68,5 @@ private class VirtualMemorySink( // @formatter:off
  * @param offset the offset in the virtual memory block to start writing at
  * @return the new [RandomAccessSink]
  */
-fun VirtualMemory.sink(size: Long = this.size, offset: Long = 0L): RandomAccessSink =
+public fun VirtualMemory.sink(size: Long = this.size, offset: Long = 0L): RandomAccessSink =
     VirtualMemorySink(this, size, offset)

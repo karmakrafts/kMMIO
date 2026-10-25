@@ -24,4 +24,4 @@ import java.lang.foreign.MemorySegment
  * @return a [MemorySegment] viewing this virtual memory block
  */
 @Suppress("Since15") // We compile against Panama as a preview feature to be compatible with Java 21
-fun VirtualMemory.asSegment(): MemorySegment = MemorySegment.ofAddress(address).reinterpret(size)
+public fun VirtualMemory.asSegment(): MemorySegment = MemorySegment.ofAddress(address).reinterpret(size)

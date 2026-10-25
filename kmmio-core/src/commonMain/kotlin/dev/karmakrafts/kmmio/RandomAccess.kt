@@ -19,11 +19,11 @@ package dev.karmakrafts.kmmio
 /**
  * An interface for objects that support random access to their contents.
  */
-interface RandomAccess {
+public interface RandomAccess {
     /**
      * The position from which to seek.
      */
-    enum class Whence {
+    public enum class Whence {
         /**
          * Seek from the start of the content.
          */
@@ -46,12 +46,12 @@ interface RandomAccess {
      * @param offset the offset from the [whence] position
      * @param whence the position from which the [offset] is applied
      */
-    fun seek(offset: Long, whence: Whence = Whence.CURRENT)
+    public fun seek(offset: Long, whence: Whence = Whence.CURRENT)
 
     /**
      * Returns the current position.
      *
      * @return the current position
      */
-    fun tell(): Long
+    public fun tell(): Long
 }

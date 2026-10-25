@@ -23,23 +23,23 @@ import kotlin.jvm.JvmInline
  * order to read, write or execute mapped memory blocks.
  */
 @JvmInline
-value class AccessFlags private constructor(internal val value: UByte) {
-    companion object {
+public value class AccessFlags private constructor(internal val value: UByte) {
+    public companion object {
         /**
          * The mapped memory may be read by the process that owns the mapping.
          */
-        val READ: AccessFlags = AccessFlags(0x01U)
+        public val READ: AccessFlags = AccessFlags(0x01U)
 
         /**
          * The mapped memory may be written to by the process that owns the mapping.
          */
-        val WRITE: AccessFlags = AccessFlags(0x02U)
+        public val WRITE: AccessFlags = AccessFlags(0x02U)
 
         /**
          * The mapped memory may be executed in the context of the process
          * that owns the mapping.
          */
-        val EXEC: AccessFlags = AccessFlags(0x04U)
+        public val EXEC: AccessFlags = AccessFlags(0x04U)
     }
 
     /**
@@ -48,7 +48,7 @@ value class AccessFlags private constructor(internal val value: UByte) {
      * @param flags the other access flags
      * @return the combined access flags
      */
-    operator fun plus(flags: AccessFlags): AccessFlags = AccessFlags(value or flags.value)
+    public operator fun plus(flags: AccessFlags): AccessFlags = AccessFlags(value or flags.value)
 
     /**
      * Checks if these access flags contain the specified access flags.
@@ -56,5 +56,5 @@ value class AccessFlags private constructor(internal val value: UByte) {
      * @param flags the access flags to check for
      * @return `true` if these access flags contain the specified access flags, `false` otherwise
      */
-    operator fun contains(flags: AccessFlags): Boolean = value and flags.value == flags.value
+    public operator fun contains(flags: AccessFlags): Boolean = value and flags.value == flags.value
 }

@@ -118,7 +118,7 @@ class VirtualMemoryTest {
         VirtualMemory(1).use { memory ->
             val oversized = object : VirtualMemory by memory {
                 override val size: Long = Int.MAX_VALUE.toLong() + 1
-                override fun readAllBytes(): ByteArray = super<VirtualMemory>.readAllBytes()
+                override fun readAllBytes(): ByteArray = super.readAllBytes()
             }
             assertFailsWith<IllegalStateException> { oversized.readAllBytes() }
         }
