@@ -23,7 +23,7 @@ import kotlin.test.assertEquals
 
 class VirtualMemorySourceTest {
     @Test
-    fun `Read via source from memory`() {
+    fun readFromVirtualMemorySource() {
         val data = "Hello, source!".encodeToByteArray()
         val memory = VirtualMemory(1024)
 

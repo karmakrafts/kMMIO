@@ -21,13 +21,13 @@ import kotlin.test.Test
 
 class VirtualMemoryTest {
     @Test
-    fun `Map and unmap anon memory`() {
+    fun mapAndUnmapAnonMemory() {
         val memory = VirtualMemory(1024 * 64)
         memory.close()
     }
 
     @Test
-    fun `Map and unmap shared memory`() {
+    fun mapAndUnmapSharedMemory() {
         val memory = VirtualMemory(1024 * 64, Path("testfile.bin"))
         memory.sync(SyncFlags.SYNC)
         memory.close()

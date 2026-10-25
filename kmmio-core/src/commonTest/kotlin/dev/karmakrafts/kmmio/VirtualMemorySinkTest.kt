@@ -22,7 +22,7 @@ import kotlin.test.assertContentEquals
 
 class VirtualMemorySinkTest {
     @Test
-    fun `Write via sink into memory`() {
+    fun writeToVirtualMemorySink() {
         val data = "Hello, sink!".encodeToByteArray()
         val memory = VirtualMemory(1024)
 
