@@ -16,7 +16,6 @@
 
 package dev.karmakrafts.kmmio
 
-import dev.karmakrafts.kmmio.MappingFlags.Companion.SHARED
 import kotlin.jvm.JvmInline
 
 /**

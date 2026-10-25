@@ -102,6 +102,11 @@ kotlin {
                 api(libs.jna.asAAR())
             }
         }
+        named("androidHostTest") {
+            dependencies {
+                runtimeOnly(libs.jna)
+            }
+        }
     }
 }
 

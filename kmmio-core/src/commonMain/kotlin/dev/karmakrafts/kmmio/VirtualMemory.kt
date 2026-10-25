@@ -18,6 +18,9 @@ package dev.karmakrafts.kmmio
 
 import kotlinx.io.files.Path
 
+@PublishedApi
+internal expect val isSharedMemoryAvailable: Boolean
+
 /**
  * Represents a block of virtual memory.
  *
@@ -29,6 +32,16 @@ interface VirtualMemory : AutoCloseable {
          * Constant representing an invalid file descriptor.
          */
         const val INVALID_FILE_DESCRIPTOR: Int = -1
+
+        /**
+         * Whether shared memory is available in current environment.
+         * May be false on more restrictive systems like Android and iOS (and its derivatives).
+         *
+         * If this is `false` and `VirtualMemory` with the `MappingFlags.SHARED` is created,
+         * the instantiation may cause an exception.
+         */
+        inline val isSharedAvailable: Boolean
+            get() = isSharedMemoryAvailable
     }
 
     /**

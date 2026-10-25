@@ -21,6 +21,9 @@ import kotlinx.io.files.Path
 import java.io.File
 import kotlin.math.min
 
+@PublishedApi
+internal actual val isSharedMemoryAvailable: Boolean = false
+
 private class VirtualMemoryImpl(
     initialSize: Long,
     override val path: Path?,
@@ -30,9 +33,10 @@ private class VirtualMemoryImpl(
     override val fileDescriptor: Int = run {
         if (path == null) return@run VirtualMemory.INVALID_FILE_DESCRIPTOR
         val file = File(path.toString())
-        if (file.exists()) file.createNewFile()
         val fd = file.absolutePath.allocateCStr().use { pathMemory ->
-            LibC.open(pathMemory.getPointer(0L), initialAccessFlags.toPosixOpenFlags() or O_CREAT)
+            LibC.open(
+                pathMemory, initialAccessFlags.toPosixOpenFlags() or O_CREAT, initialAccessFlags.toPosixFileMask()
+            )
         }
         check(fd != VirtualMemory.INVALID_FILE_DESCRIPTOR) {
             "Could not open file for VirtualMemory at $path"

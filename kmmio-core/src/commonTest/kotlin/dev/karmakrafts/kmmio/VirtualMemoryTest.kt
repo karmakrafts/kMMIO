@@ -16,8 +16,18 @@
 
 package dev.karmakrafts.kmmio
 
+import kotlinx.io.buffered
 import kotlinx.io.files.Path
+import kotlinx.io.files.SystemFileSystem
+import kotlinx.io.files.SystemTemporaryDirectory
+import kotlinx.io.readByteArray
+import kotlin.random.Random
 import kotlin.test.Test
+import kotlin.test.assertContentEquals
+import kotlin.test.assertEquals
+import kotlin.test.assertFailsWith
+import kotlin.test.assertFalse
+import kotlin.test.assertTrue
 
 class VirtualMemoryTest {
     @Test
@@ -28,8 +38,36 @@ class VirtualMemoryTest {
 
     @Test
     fun mapAndUnmapSharedMemory() {
-        val memory = VirtualMemory(1024 * 64, Path("testfile.bin"))
-        memory.sync(SyncFlags.SYNC)
-        memory.close()
+        val path = Path(SystemTemporaryDirectory, "kmmio-${Random.nextLong()}.bin")
+        val data = "Hello, shared memory!".encodeToByteArray()
+        assertFalse(SystemFileSystem.exists(path))
+        try {
+            VirtualMemory(1024 * 64, path).use { memory ->
+                assertTrue(memory.isFileBacked)
+                assertEquals(MappingFlags.SHARED, memory.mappingFlags)
+                assertEquals(data.size.toLong(), memory.writeBytes(data))
+                assertTrue(memory.sync(SyncFlags.SYNC))
+            }
+            SystemFileSystem.source(path).buffered().use { source ->
+                assertContentEquals(data, source.readByteArray(data.size))
+            }
+            VirtualMemory(1024 * 64, path).use { memory ->
+                val actual = ByteArray(data.size)
+                assertEquals(data.size.toLong(), memory.readBytes(actual, actual.size.toLong()))
+                assertContentEquals(data, actual)
+            }
+        }
+        finally {
+            SystemFileSystem.delete(path, mustExist = false)
+        }
+    }
+
+    @Test
+    fun mapFileInMissingDirectory() {
+        val directory = Path(SystemTemporaryDirectory, "kmmio-missing-${Random.nextLong()}")
+        assertFalse(SystemFileSystem.exists(directory))
+        assertFailsWith<IllegalStateException> {
+            VirtualMemory(1024 * 64, Path(directory, "testfile.bin"))
+        }
     }
 }

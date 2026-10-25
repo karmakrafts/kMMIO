@@ -26,7 +26,6 @@ import kotlinx.cinterop.toCPointer
 import kotlinx.cinterop.toLong
 import kotlinx.cinterop.usePinned
 import kotlinx.io.files.Path
-import kotlinx.io.files.SystemFileSystem
 import platform.posix.O_CREAT
 import platform.posix.ftruncate
 import platform.posix.memcpy
@@ -51,9 +50,8 @@ internal abstract class AbstractVirtualMemory(
     override val fileDescriptor: Int = run {
         val path = path
         if (path == null) return@run VirtualMemory.INVALID_FILE_DESCRIPTOR
-        if (SystemFileSystem.exists(path)) SystemFileSystem.delete(path)
-        SystemFileSystem.sink(path).close() // Create new file so we can resolve
-        val fd = posixOpen(path.toString(), _accessFlags.toPosixOpenFlags() or O_CREAT)
+        val fd =
+            posixOpen(path.toString(), _accessFlags.toPosixOpenFlags() or O_CREAT, 0x1B6) // 0666, filtered by umask
         check(fd != VirtualMemory.INVALID_FILE_DESCRIPTOR) {
             "Could not open file for VirtualMemory at $path"
         }

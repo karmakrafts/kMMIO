@@ -23,7 +23,7 @@ import com.sun.jna.Pointer
 internal interface LibC : Library {
     companion object : LibC by Native.load("c", LibC::class.java)
 
-    fun open(path: Pointer, oflags: Int /*, ... */): Int
+    fun open(path: Pointer, oflags: Int, mode: Int): Int
     fun close(fd: Int): Int
     fun ftruncate(fd: Int, length: Long): Int
 

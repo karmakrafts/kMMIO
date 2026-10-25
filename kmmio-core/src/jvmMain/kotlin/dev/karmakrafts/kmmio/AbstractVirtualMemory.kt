@@ -23,8 +23,6 @@ import java.lang.foreign.MemorySegment
 import java.lang.foreign.ValueLayout
 import java.lang.invoke.MethodHandle
 import kotlin.io.path.absolutePathString
-import kotlin.io.path.deleteExisting
-import kotlin.io.path.exists
 import kotlin.math.min
 import java.nio.file.Path as NioPath
 
@@ -66,7 +64,6 @@ internal abstract class AbstractVirtualMemory(
     override val fileDescriptor: Int = run {
         if (path == null) return@run VirtualMemory.INVALID_FILE_DESCRIPTOR // This virtual memory block is not file backed
         val nioPath = NioPath.of(path.toString())
-        if (nioPath.exists()) nioPath.deleteExisting()
         Arena.ofConfined().use { arena ->
             val pathAddress = arena.allocateUtf8String(nioPath.absolutePathString())
             val fd = openFile( // @formatter:off
