@@ -1,5 +1,14 @@
 ## [Unreleased]
 
+### Added
+
+- Android host and device tests
+
+### Fixed
+
+- Broken zero-size reads on JVM and Android
+- Broken JNA pointer instantiation on Android
+
 ### Changed
 
 - Updated to Gradle 9.8.2
