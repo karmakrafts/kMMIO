@@ -24,4 +24,4 @@ import com.sun.jna.Pointer
  * @param offset The offset from the start of the virtual memory.
  * @return A JNA [Pointer] to the virtual memory at the given [offset].
  */
-fun VirtualMemory.getPointer(offset: Long = 0L): Pointer = Pointer.createConstant(address + offset)
+fun VirtualMemory.getPointer(offset: Long = 0L): Pointer = Pointer(address + offset)

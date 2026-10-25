@@ -38,6 +38,8 @@ private class VirtualMemorySource( // @formatter:off
     override fun close() = Unit // no-op: does not own the memory
 
     override fun readAtMostTo(sink: Buffer, byteCount: Long): Long {
+        require(byteCount >= 0L) { "byteCount must not be negative" }
+        if (byteCount == 0L) return 0L
         if (position >= size) return -1L
 
         var remaining = min(byteCount, size - position)

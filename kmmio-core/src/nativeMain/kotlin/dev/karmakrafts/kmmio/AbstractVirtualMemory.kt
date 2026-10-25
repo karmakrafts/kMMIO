@@ -30,7 +30,6 @@ import platform.posix.O_CREAT
 import platform.posix.ftruncate
 import platform.posix.memcpy
 import platform.posix.memset
-import kotlin.math.min
 import platform.posix.close as posixClose
 import platform.posix.open as posixOpen
 
@@ -45,7 +44,7 @@ internal abstract class AbstractVirtualMemory(
     override val size: Long get() = _size
 
     protected var _accessFlags: AccessFlags = initialAccessFlags
-    override val accessFlags: AccessFlags = initialAccessFlags
+    override val accessFlags: AccessFlags get() = _accessFlags
 
     override val fileDescriptor: Int = run {
         val path = path
@@ -73,12 +72,14 @@ internal abstract class AbstractVirtualMemory(
         if (_size == size) return false
         unmap()
         if (isFileBacked) ftruncate(fileDescriptor, size.convert()).checkPosixResult()
+        _size = size
         map()
         return true
     }
 
     override fun copyTo(memory: VirtualMemory, size: Long, srcOffset: Long, dstOffset: Long): Long {
-        val actualSize = min(size - srcOffset, memory.size - dstOffset)
+        val actualSize = minOf(size, _size - srcOffset, memory.size - dstOffset)
+        if (actualSize == 0L) return 0L
         memcpy( // @formatter:off
             (memory.address + dstOffset).toCPointer<COpaque>(),
             (address + srcOffset).toCPointer<COpaque>(),
@@ -88,7 +89,8 @@ internal abstract class AbstractVirtualMemory(
     }
 
     override fun copyFrom(memory: VirtualMemory, size: Long, srcOffset: Long, dstOffset: Long): Long {
-        val actualSize = min(size - srcOffset, memory.size - dstOffset)
+        val actualSize = minOf(size, memory.size - srcOffset, _size - dstOffset)
+        if (actualSize == 0L) return 0L
         memcpy( // @formatter:off
             (address + dstOffset).toCPointer<COpaque>(),
             (memory.address + srcOffset).toCPointer<COpaque>(),
@@ -98,7 +100,8 @@ internal abstract class AbstractVirtualMemory(
     }
 
     override fun readBytes(array: ByteArray, size: Long, srcOffset: Long, dstOffset: Long): Long {
-        val actualSize = min(size - srcOffset, array.size.toLong() - dstOffset)
+        val actualSize = minOf(size, _size - srcOffset, array.size.toLong() - dstOffset)
+        if (actualSize == 0L) return 0L
         array.usePinned { pinnedArray ->
             memcpy( // @formatter:off
                 (pinnedArray.addressOf(0).toLong() + dstOffset).toCPointer<COpaque>(),
@@ -110,7 +113,8 @@ internal abstract class AbstractVirtualMemory(
     }
 
     override fun writeBytes(array: ByteArray, size: Long, srcOffset: Long, dstOffset: Long): Long {
-        val actualSize = min(size - srcOffset, array.size.toLong() - dstOffset)
+        val actualSize = minOf(size, array.size.toLong() - srcOffset, _size - dstOffset)
+        if (actualSize == 0L) return 0L
         array.usePinned { pinnedArray ->
             memcpy( // @formatter:off
                 (address + dstOffset).toCPointer<COpaque>(),

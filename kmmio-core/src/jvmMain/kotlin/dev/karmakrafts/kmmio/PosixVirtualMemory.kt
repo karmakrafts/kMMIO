@@ -122,7 +122,7 @@ internal class PosixVirtualMemory( // @formatter:off
         val result = (mprotect.invokeExact(
             _address, _size, accessFlags.value.toInt()
         ) as Int) == 0
-        _accessFlags = accessFlags
+        if (result) _accessFlags = accessFlags
         return result
     }
 }

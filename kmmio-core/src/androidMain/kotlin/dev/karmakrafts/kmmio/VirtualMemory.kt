@@ -19,7 +19,6 @@ package dev.karmakrafts.kmmio
 import com.sun.jna.Pointer
 import kotlinx.io.files.Path
 import java.io.File
-import kotlin.math.min
 
 @PublishedApi
 internal actual val isSharedMemoryAvailable: Boolean = false
@@ -78,13 +77,16 @@ private class VirtualMemoryImpl(
     override fun unlock(): Boolean = LibC.munlock(_address, _size) == 0
 
     override fun protect(accessFlags: AccessFlags): Boolean {
-        return LibC.mprotect(_address, _size, accessFlags.toPosixFlags()) == 0
+        val result = LibC.mprotect(_address, _size, accessFlags.toPosixFlags()) == 0
+        if (result) _accessFlags = accessFlags
+        return result
     }
 
     override fun resize(size: Long): Boolean {
         if (_size == size) return false // Don't resize if size is already the same
         unmap()
         if (isFileBacked) LibC.ftruncate(fileDescriptor, size).checkPosixResult()
+        _size = size
         _address = map()
         return true
     }
@@ -94,7 +96,8 @@ private class VirtualMemoryImpl(
     }
 
     override fun copyTo(memory: VirtualMemory, size: Long, srcOffset: Long, dstOffset: Long): Long {
-        val actualSize = min(size - srcOffset, memory.size - dstOffset)
+        val actualSize = minOf(size, _size - srcOffset, memory.size - dstOffset)
+        if (actualSize == 0L) return 0L
         LibC.memcpy( // @formatter:off
             Pointer.createConstant(memory.address + dstOffset),
             Pointer.createConstant(Pointer.nativeValue(_address) + srcOffset),
@@ -104,7 +107,8 @@ private class VirtualMemoryImpl(
     }
 
     override fun copyFrom(memory: VirtualMemory, size: Long, srcOffset: Long, dstOffset: Long): Long {
-        val actualSize = min(size - srcOffset, memory.size - dstOffset)
+        val actualSize = minOf(size, memory.size - srcOffset, _size - dstOffset)
+        if (actualSize == 0L) return 0L
         LibC.memcpy( // @formatter:off
             Pointer.createConstant(Pointer.nativeValue(_address) + dstOffset),
             Pointer.createConstant(memory.address + srcOffset),
@@ -114,13 +118,15 @@ private class VirtualMemoryImpl(
     }
 
     override fun readBytes(array: ByteArray, size: Long, srcOffset: Long, dstOffset: Long): Long {
-        val actualSize = min(size - srcOffset, array.size.toLong() - dstOffset)
+        val actualSize = minOf(size, _size - srcOffset, array.size.toLong() - dstOffset)
+        if (actualSize == 0L) return 0L
         _address.read(srcOffset, array, dstOffset.toInt(), actualSize.toInt())
         return actualSize
     }
 
     override fun writeBytes(array: ByteArray, size: Long, srcOffset: Long, dstOffset: Long): Long {
-        val actualSize = min(size - srcOffset, array.size.toLong() - dstOffset)
+        val actualSize = minOf(size, array.size.toLong() - srcOffset, _size - dstOffset)
+        if (actualSize == 0L) return 0L
         _address.write(dstOffset, array, srcOffset.toInt(), actualSize.toInt())
         return actualSize
     }

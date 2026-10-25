@@ -23,7 +23,6 @@ import java.lang.foreign.MemorySegment
 import java.lang.foreign.ValueLayout
 import java.lang.invoke.MethodHandle
 import kotlin.io.path.absolutePathString
-import kotlin.math.min
 import java.nio.file.Path as NioPath
 
 @Suppress("Since15") // We compile against Panama as a preview feature to be compatible with Java 21
@@ -50,7 +49,7 @@ internal abstract class AbstractVirtualMemory(
     override val size: Long get() = _size
 
     protected var _accessFlags: AccessFlags = initialAccessFlags
-    override val accessFlags: AccessFlags = _accessFlags
+    override val accessFlags: AccessFlags get() = _accessFlags
 
     protected lateinit var _address: MemorySegment
     override val address: Long get() = _address.address()
@@ -96,7 +95,8 @@ internal abstract class AbstractVirtualMemory(
     }
 
     override fun copyTo(memory: VirtualMemory, size: Long, srcOffset: Long, dstOffset: Long): Long {
-        val actualSize = min(size - srcOffset, memory.size - dstOffset)
+        val actualSize = minOf(size, _size - srcOffset, memory.size - dstOffset)
+        if (actualSize == 0L) return 0L
         memcpy.invokeExact( // @formatter:off
             MemorySegment.ofAddress(memory.address + dstOffset),
             MemorySegment.ofAddress(_address.address() + srcOffset),
@@ -106,7 +106,8 @@ internal abstract class AbstractVirtualMemory(
     }
 
     override fun copyFrom(memory: VirtualMemory, size: Long, srcOffset: Long, dstOffset: Long): Long {
-        val actualSize = min(size - srcOffset, memory.size - dstOffset)
+        val actualSize = minOf(size, memory.size - srcOffset, _size - dstOffset)
+        if (actualSize == 0L) return 0L
         memcpy.invokeExact( // @formatter:off
             MemorySegment.ofAddress(_address.address() + dstOffset),
             MemorySegment.ofAddress(memory.address + srcOffset),
@@ -116,20 +117,22 @@ internal abstract class AbstractVirtualMemory(
     }
 
     override fun readBytes(array: ByteArray, size: Long, srcOffset: Long, dstOffset: Long): Long {
-        val actualSize = min(size - srcOffset, array.size.toLong() - dstOffset)
+        val actualSize = minOf(size, _size - srcOffset, array.size.toLong() - dstOffset)
+        if (actualSize == 0L) return 0L
         _address.reinterpret(_size)
-            .asSlice(srcOffset, _size - srcOffset)
+            .asSlice(srcOffset, actualSize)
             .asByteBuffer()
-            .get(array, dstOffset.toInt(), size.toInt() - dstOffset.toInt())
+            .get(array, dstOffset.toInt(), actualSize.toInt())
         return actualSize
     }
 
     override fun writeBytes(array: ByteArray, size: Long, srcOffset: Long, dstOffset: Long): Long {
-        val actualSize = min(size - srcOffset, _size - dstOffset)
+        val actualSize = minOf(size, array.size.toLong() - srcOffset, _size - dstOffset)
+        if (actualSize == 0L) return 0L
         _address.reinterpret(_size)
-            .asSlice(dstOffset, _size - dstOffset)
+            .asSlice(dstOffset, actualSize)
             .asByteBuffer()
-            .put(array, srcOffset.toInt(), (size - srcOffset).toInt())
+            .put(array, srcOffset.toInt(), actualSize.toInt())
         return actualSize
     }
 

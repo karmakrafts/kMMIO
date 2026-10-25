@@ -64,7 +64,9 @@ private class VirtualMemoryImpl( // @formatter:off
     override fun unlock(): Boolean = munlock(_address, _size.convert()) == 0
 
     override fun protect(accessFlags: AccessFlags): Boolean {
-        return mprotect(_address, _size.convert(), accessFlags.toPosixFlags()) == 0
+        val result = mprotect(_address, _size.convert(), accessFlags.toPosixFlags()) == 0
+        if (result) _accessFlags = accessFlags
+        return result
     }
 }
 

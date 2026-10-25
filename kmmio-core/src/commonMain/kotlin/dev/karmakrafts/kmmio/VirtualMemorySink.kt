@@ -42,6 +42,7 @@ private class VirtualMemorySink( // @formatter:off
     }
 
     override fun write(source: Buffer, byteCount: Long) {
+        require(byteCount >= 0L) { "byteCount must not be negative" }
         val remaining = size - position
         require(byteCount <= remaining) {
             "Not enough space in VirtualMemory region: requested $byteCount bytes, $remaining bytes were remaining"

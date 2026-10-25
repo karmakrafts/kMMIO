@@ -16,28 +16,18 @@
 
 package dev.karmakrafts.kmmio
 
-import kotlinx.io.Buffer
-import kotlin.test.Test
+import com.sun.jna.Pointer
 import kotlin.test.assertContentEquals
+import kotlin.test.assertEquals
 
-class VirtualMemorySinkTest {
-    @Test
-    fun writeToVirtualMemorySink() {
-        val data = "Hello, sink!".encodeToByteArray()
-        val memory = VirtualMemory(1024)
-
-        val sink = memory.sink(size = data.size.toLong(), offset = 0L)
-        val buffer = Buffer()
-        buffer.write(data)
-
-        sink.write(buffer, data.size.toLong())
-        sink.flush()
-
-        val out = ByteArray(data.size)
-        memory.readBytes(out, size = out.size.toLong())
-
-        assertContentEquals(data.asList(), out.asList())
-
-        memory.close()
-    }
+internal actual fun assertPlatformMemoryView(memory: VirtualMemory) {
+    memory.zero()
+    val pointer = memory.getPointer()
+    assertEquals(memory.address, Pointer.nativeValue(pointer))
+    val offsetPointer = memory.getPointer(2)
+    assertEquals(memory.address + 2, Pointer.nativeValue(offsetPointer))
+    memory.writeBytes(byteArrayOf(1, 2, 3))
+    assertContentEquals(byteArrayOf(1, 2, 3), pointer.getByteArray(0, 3))
+    offsetPointer.setByte(0, 42)
+    assertEquals(42.toByte(), memory.readAllBytes()[2])
 }

@@ -18,7 +18,11 @@ package dev.karmakrafts.kmmio
 
 import kotlinx.cinterop.COpaque
 import kotlinx.cinterop.ExperimentalForeignApi
+import kotlinx.cinterop.UIntVar
+import kotlinx.cinterop.alloc
 import kotlinx.cinterop.convert
+import kotlinx.cinterop.memScoped
+import kotlinx.cinterop.ptr
 import kotlinx.cinterop.toCPointer
 import kotlinx.io.files.Path
 import platform.posix._get_osfhandle
@@ -108,8 +112,13 @@ private class VirtualMemoryImpl(
 
     override fun unlock(): Boolean = VirtualUnlock(_address, _size.convert()) != 0
 
-    override fun protect(accessFlags: AccessFlags): Boolean {
-        return VirtualProtect(_address, _size.convert(), accessFlags.toPageProtectionFlags().toUInt(), null) != 0
+    override fun protect(accessFlags: AccessFlags): Boolean = memScoped {
+        val previousFlags = alloc<UIntVar>()
+        val result = VirtualProtect(
+            _address, _size.convert(), accessFlags.toPageProtectionFlags().toUInt(), previousFlags.ptr
+        ) != 0
+        if (result) _accessFlags = accessFlags
+        result
     }
 }
 

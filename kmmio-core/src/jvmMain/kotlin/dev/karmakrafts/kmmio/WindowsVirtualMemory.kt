@@ -176,8 +176,13 @@ internal class WindowsVirtualMemory( // @formatter:off
     override fun unlock(): Boolean = (VirtualUnlock.invokeExact(_address, _size) as Int) != 0
 
     override fun protect(accessFlags: AccessFlags): Boolean {
-        return (VirtualProtect.invokeExact(
-            _address, _size, accessFlags.toPageProtectionFlags(), MemorySegment.NULL
-        ) as Int) != 0
+        return Arena.ofConfined().use { arena ->
+            val previousFlags = arena.allocate(ValueLayout.JAVA_INT)
+            val result = (VirtualProtect.invokeExact(
+                _address, _size, accessFlags.toPageProtectionFlags(), previousFlags
+            ) as Int) != 0
+            if (result) _accessFlags = accessFlags
+            result
+        }
     }
 }
