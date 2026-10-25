@@ -19,6 +19,9 @@
 import dev.karmakrafts.conventions.asAAR
 import dev.karmakrafts.conventions.configureJava
 import dev.karmakrafts.conventions.dokka.configureDokka
+import dev.karmakrafts.conventions.dokka.withJava
+import dev.karmakrafts.conventions.dokka.withKotlin
+import dev.karmakrafts.conventions.dokka.withKotlinxIo
 import dev.karmakrafts.conventions.kotlin.defaultCompilerOptions
 import dev.karmakrafts.conventions.kotlin.withAndroidLibrary
 import dev.karmakrafts.conventions.kotlin.withJvm

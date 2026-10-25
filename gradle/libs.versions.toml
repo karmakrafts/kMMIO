@@ -2,12 +2,12 @@
 
 java = "21"
 
-androidGradle = "9.2.1" # https://developer.android.com/reference/tools/gradle-api
-kmmio = "2.3.1"
-karmaConventions = "1.18.3" # https://github.com/karmakrafts/karma-conventions/tags
-kotlin = "2.4.0" # https://github.com/JetBrains/kotlin/releases
+androidGradle = "9.4.1" # https://developer.android.com/reference/tools/gradle-api
+kmmio = "2.4.0"
+karmaConventions = "1.23.0.315-SNAPSHOT" # https://github.com/karmakrafts/karma-conventions/tags
+kotlin = "2.5.0-Beta2" # https://github.com/JetBrains/kotlin/releases
 kotlinxIo = "0.9.1" # https://github.com/Kotlin/kotlinx-io/releases
-dokka = "2.2.0" # https://github.com/Kotlin/dokka/releases
+dokka = "2.3.0-Beta" # https://github.com/Kotlin/dokka/releases
 jna = "5.19.1" # https://github.com/java-native-access/jna/tags
 
 [libraries]

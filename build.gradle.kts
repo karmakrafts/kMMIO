@@ -33,8 +33,10 @@ group = "dev.karmakrafts.kmmio"
 version = GitLabCI.getDefaultVersion(libs.versions.kmmio)
 
 subprojects {
-    plugins.apply("signing")
-    plugins.apply("maven-publish")
+    apply {
+        plugin<MavenPublishPlugin>()
+        plugin<SigningPlugin>()
+    }
 
     group = rootProject.group
     version = rootProject.version
