@@ -24,7 +24,10 @@ import dev.karmakrafts.conventions.dokka.withKotlin
 import dev.karmakrafts.conventions.dokka.withKotlinxIo
 import dev.karmakrafts.conventions.kotlin.defaultCompilerOptions
 import dev.karmakrafts.conventions.kotlin.withAndroidLibrary
+import dev.karmakrafts.conventions.kotlin.withDefaultDeviceTests
+import dev.karmakrafts.conventions.kotlin.withDefaultHostTests
 import dev.karmakrafts.conventions.kotlin.withJvm
+import dev.karmakrafts.conventions.kotlin.withLinuxArm64StandaloneTests
 import dev.karmakrafts.conventions.kotlin.withNative
 import dev.karmakrafts.conventions.setProjectInfo
 import org.jetbrains.kotlin.gradle.ExperimentalKotlinGradlePluginApi
@@ -49,8 +52,12 @@ kotlin {
     defaultCompilerOptions()
     withSourcesJar()
     withJvm()
-    withAndroidLibrary("$group.core")
+    withAndroidLibrary("$group.core") {
+        withDefaultHostTests()
+        withDefaultDeviceTests()
+    }
     withNative()
+    withLinuxArm64StandaloneTests()
     applyDefaultHierarchyTemplate {
         common {
             group("ios") {
